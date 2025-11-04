@@ -1,0 +1,239 @@
+<template>
+  <div class="article-detail-container" v-loading="loading">
+    <div class="article-header" v-if="article">
+      <div class="category-badge">{{ article.categoryName }}</div>
+      <h1>{{ article.title }}</h1>
+      <div class="article-info">
+        <span class="author">
+          <el-icon><User /></el-icon>
+          {{ article.authorName || '匿名' }}
+        </span>
+        <span class="date">
+          <el-icon><Calendar /></el-icon>
+          {{ formatDate(article.publishTime) }}
+        </span>
+        <span class="views">
+          <el-icon><View /></el-icon>
+          {{ article.viewCount }} 浏览
+        </span>
+        <span class="likes">
+          <el-icon><StarFilled /></el-icon>
+          {{ article.likeCount }} 点赞
+        </span>
+      </div>
+    </div>
+
+    <div class="article-cover" v-if="article && article.coverImage">
+      <img :src="article.coverImage" :alt="article.title" />
+    </div>
+
+    <div class="article-content" v-if="article">
+      <div v-html="article.content"></div>
+    </div>
+
+    <div class="article-actions" v-if="article">
+      <el-button type="primary" :icon="StarFilled" @click="handleLike" :loading="liking">
+        点赞 ({{ article.likeCount }})
+      </el-button>
+      <el-button :icon="Share" @click="handleShare">分享</el-button>
+    </div>
+
+    <div class="back-button">
+      <el-button @click="goBack">返回列表</el-button>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { getArticleDetail, likeArticle } from '@/api/article'
+import { ElMessage } from 'element-plus'
+import { User, Calendar, View, StarFilled, Share } from '@element-plus/icons-vue'
+
+const router = useRouter()
+const route = useRoute()
+
+const loading = ref(false)
+const liking = ref(false)
+const article = ref(null)
+
+const loadArticle = async () => {
+  loading.value = true
+  try {
+    const res = await getArticleDetail(route.params.id)
+    if (res.code === 1 || res.code === 200) {
+      article.value = res.data
+    }
+  } catch (error) {
+    console.error('加载文章详情失败:', error)
+    ElMessage.error('加载文章失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+const handleLike = async () => {
+  liking.value = true
+  try {
+    await likeArticle(route.params.id)
+    article.value.likeCount++
+    ElMessage.success('点赞成功')
+  } catch (error) {
+    console.error('点赞失败:', error)
+    ElMessage.error('点赞失败')
+  } finally {
+    liking.value = false
+  }
+}
+
+const handleShare = () => {
+  const url = window.location.href
+  navigator.clipboard.writeText(url).then(() => {
+    ElMessage.success('链接已复制到剪贴板')
+  }).catch(() => {
+    ElMessage.error('复制失败')
+  })
+}
+
+const goBack = () => {
+  router.back()
+}
+
+const formatDate = (dateStr) => {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  return date.toLocaleString('zh-CN')
+}
+
+onMounted(() => {
+  loadArticle()
+})
+</script>
+
+<style scoped>
+.article-detail-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px;
+  background: #fff;
+  min-height: 80vh;
+}
+
+.article-header {
+  text-align: center;
+  padding: 30px 0;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.category-badge {
+  display: inline-block;
+  background: #409eff;
+  color: #fff;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+.article-header h1 {
+  font-size: 32px;
+  color: #303133;
+  margin-bottom: 20px;
+  line-height: 1.4;
+}
+
+.article-info {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  color: #909399;
+  font-size: 14px;
+}
+
+.article-info span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.article-cover {
+  margin: 30px 0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.article-cover img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.article-content {
+  padding: 30px 0;
+  font-size: 16px;
+  line-height: 1.8;
+  color: #303133;
+}
+
+.article-content :deep(h2) {
+  font-size: 24px;
+  margin: 30px 0 15px;
+  color: #303133;
+}
+
+.article-content :deep(h3) {
+  font-size: 20px;
+  margin: 25px 0 12px;
+  color: #606266;
+}
+
+.article-content :deep(p) {
+  margin-bottom: 15px;
+  text-indent: 2em;
+}
+
+.article-content :deep(img) {
+  max-width: 100%;
+  height: auto;
+  margin: 20px 0;
+  border-radius: 8px;
+}
+
+.article-content :deep(ul), .article-content :deep(ol) {
+  margin: 15px 0;
+  padding-left: 30px;
+}
+
+.article-content :deep(li) {
+  margin-bottom: 8px;
+}
+
+.article-actions {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  padding: 30px 0;
+  border-top: 1px solid #ebeef5;
+}
+
+.back-button {
+  text-align: center;
+  padding: 20px 0;
+}
+
+@media (max-width: 768px) {
+  .article-header h1 {
+    font-size: 24px;
+  }
+
+  .article-info {
+    flex-wrap: wrap;
+    gap: 15px;
+  }
+
+  .article-content {
+    font-size: 15px;
+  }
+}
+</style>

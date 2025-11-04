@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  # MySQL (使用本地MySQL，已注释)
+  # mysql:
+  #   image: mysql:8.0
+  #   container_name: murder-mysql
+  #   environment:
+  #     MYSQL_ROOT_PASSWORD: root
+  #     TZ: Asia/Shanghai
+  #   ports:
+  #     - "3306:3306"
+  #   volumes:
+  #     - ./mysql-data:/var/lib/mysql
+  #     - ./sql:/docker-entrypoint-initdb.d
+  #   command: --default-authentication-plugin=mysql_native_password
+  #   networks:
+  #     - murder-network
+
+  # Redis
+  redis:
+    image: redis:7-alpine
+    container_name: murder-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./redis-data:/data
+    command: redis-server --appendonly yes
+    networks:
+      - murder-network
+
+  # Nacos (使用内嵌数据库)
+  nacos:
+    image: nacos/nacos-server:v2.2.0
+    container_name: murder-nacos
+    environment:
+      MODE: standalone
+      TZ: Asia/Shanghai
+    ports:
+      - "8848:8848"
+      - "9848:9848"
+    networks:
+      - murder-network
+
+  # 管理后台前端
+  admin-frontend:
+    build:
+      context: ./murder-admin-frontend
+      dockerfile: Dockerfile
+    container_name: murder-admin-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - redis
+    networks:
+      - murder-network
+    restart: unless-stopped
+
+networks:
+  murder-network:
+    driver: bridge

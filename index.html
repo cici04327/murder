@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>剧本杀在线预约平台 - 欢迎</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 100%;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 60px;
+        }
+
+        .header h1 {
+            font-size: 48px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .header p {
+            font-size: 20px;
+            opacity: 0.9;
+        }
+
+        .portal-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+
+        .portal-card {
+            background: white;
+            border-radius: 20px;
+            padding: 50px 40px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .portal-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+        }
+
+        .portal-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 45px rgba(0, 0, 0, 0.3);
+        }
+
+        .portal-card.user::before {
+            background: linear-gradient(90deg, #667eea, #764ba2);
+        }
+
+        .portal-card.admin::before {
+            background: linear-gradient(90deg, #f093fb, #f5576c);
+        }
+
+        .portal-icon {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 50px;
+            transition: all 0.3s ease;
+        }
+
+        .portal-card.user .portal-icon {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .portal-card.admin .portal-icon {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .portal-card:hover .portal-icon {
+            transform: scale(1.1) rotate(5deg);
+        }
+
+        .portal-title {
+            font-size: 32px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .portal-description {
+            font-size: 16px;
+            text-align: center;
+            color: #666;
+            line-height: 1.8;
+            margin-bottom: 30px;
+        }
+
+        .portal-features {
+            list-style: none;
+            margin-bottom: 30px;
+        }
+
+        .portal-features li {
+            padding: 12px 0;
+            color: #555;
+            font-size: 15px;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            align-items: center;
+        }
+
+        .portal-features li:last-child {
+            border-bottom: none;
+        }
+
+        .portal-features li::before {
+            content: '✓';
+            margin-right: 12px;
+            color: white;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .portal-card.admin .portal-features li::before {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+        }
+
+        .portal-button {
+            width: 100%;
+            padding: 16px;
+            font-size: 18px;
+            font-weight: bold;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: block;
+            text-align: center;
+            color: white;
+        }
+
+        .portal-card.user .portal-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .portal-card.admin .portal-button {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .portal-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .footer {
+            text-align: center;
+            color: white;
+            opacity: 0.8;
+            margin-top: 40px;
+        }
+
+        .footer p {
+            margin: 8px 0;
+            font-size: 14px;
+        }
+
+        .footer a {
+            color: white;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 32px;
+            }
+
+            .header p {
+                font-size: 16px;
+            }
+
+            .portal-cards {
+                grid-template-columns: 1fr;
+                gap: 30px;
+            }
+
+            .portal-card {
+                padding: 40px 30px;
+            }
+
+            .portal-title {
+                font-size: 24px;
+            }
+        }
+
+        /* 加载动画 */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .container {
+            animation: fadeIn 0.8s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎭 剧本杀在线预约平台</h1>
+            <p>Murder Mystery Online Booking Platform</p>
+        </div>
+
+        <div class="portal-cards">
+            <!-- 用户端入口 -->
+            <div class="portal-card user" onclick="window.location.href='http://localhost:3001'">
+                <div class="portal-icon">👤</div>
+                <h2 class="portal-title">用户端</h2>
+                <p class="portal-description">探索精彩剧本，享受沉浸式体验</p>
+                <ul class="portal-features">
+                    <li>浏览海量剧本资源</li>
+                    <li>在线预约门店体验</li>
+                    <li>查看剧本详情和评价</li>
+                    <li>管理个人预约订单</li>
+                    <li>领取优惠券享折扣</li>
+                    <li>积分系统奖励丰厚</li>
+                </ul>
+                <button class="portal-button">进入用户端 →</button>
+            </div>
+
+            <!-- 管理端入口 -->
+            <div class="portal-card admin" onclick="window.location.href='http://localhost:3000'">
+                <div class="portal-icon">⚙️</div>
+                <h2 class="portal-title">管理端</h2>
+                <p class="portal-description">强大的后台管理系统</p>
+                <ul class="portal-features">
+                    <li>门店信息管理</li>
+                    <li>剧本库管理维护</li>
+                    <li>预约订单处理</li>
+                    <li>用户数据管理</li>
+                    <li>优惠券发放管理</li>
+                    <li>数据统计与分析</li>
+                </ul>
+                <button class="portal-button">进入管理端 →</button>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>© 2024 剧本杀在线预约平台 | 版权所有</p>
+            <p>
+                <a href="#about">关于我们</a>
+                <a href="#contact">联系我们</a>
+                <a href="#privacy">隐私政策</a>
+                <a href="#terms">使用条款</a>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // 添加键盘快捷键
+        document.addEventListener('keydown', function(e) {
+            if (e.key === '1') {
+                window.location.href = 'http://localhost:3001';
+            } else if (e.key === '2') {
+                window.location.href = 'http://localhost:3000';
+            }
+        });
+
+        // 添加控制台提示
+        console.log('%c欢迎来到剧本杀在线预约平台！', 'color: #667eea; font-size: 20px; font-weight: bold;');
+        console.log('%c快捷键提示：', 'color: #764ba2; font-size: 16px;');
+        console.log('按 1 - 进入用户端');
+        console.log('按 2 - 进入管理端');
+    </script>
+</body>
+</html>
