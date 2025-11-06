@@ -53,12 +53,6 @@ const routes = [
         meta: { title: '房间管理', icon: 'Operation' }
       },
       {
-        path: 'employee',
-        name: 'StoreEmployee',
-        component: () => import('@/views/store/employee.vue'),
-        meta: { title: '员工管理', icon: 'User' }
-      },
-      {
         path: 'review',
         name: 'StoreReview',
         component: () => import('@/views/store/review.vue'),
@@ -131,6 +125,12 @@ const routes = [
         component: () => import('@/views/reservation/edit.vue'),
         meta: { title: '编辑预约', activeMenu: '/reservation/list' },
         hidden: true
+      },
+      {
+        path: 'refund',
+        name: 'ReservationRefund',
+        component: () => import('@/views/reservation/refund.vue'),
+        meta: { title: '退款管理', icon: 'RefreshLeft' }
       }
     ]
   },
@@ -180,6 +180,20 @@ const routes = [
         component: () => import('@/views/user/address.vue'),
         meta: { title: '地址管理' },
         hidden: true
+      }
+    ]
+  },
+  {
+    path: '/vip',
+    component: Layout,
+    redirect: '/vip/packages',
+    meta: { title: 'VIP管理', icon: 'Medal' },
+    children: [
+      {
+        path: 'packages',
+        name: 'VipPackages',
+        component: () => import('@/views/vip/packages.vue'),
+        meta: { title: 'VIP套餐', icon: 'ShoppingBag' }
       }
     ]
   },

@@ -1,0 +1,31 @@
+# ============================================
+# Nacos 配置中心 - 预约服务专属配置
+# Data ID: murder-reservation.yml
+# Group: DEFAULT_GROUP
+# ============================================
+
+server:
+  port: 8085
+
+spring:
+  redis:
+    database: 4  # 预约服务使用 Redis DB4
+  cloud:
+    nacos:
+      discovery:
+        metadata:
+          version: 1.0.0
+          service-type: reservation
+
+# 支付宝配置
+alipay:
+  app-id: 2021000000000000
+  private-key: your-private-key-here
+  public-key: your-alipay-public-key-here
+  notify-url: http://localhost:8085/reservation/payment/notify
+  return-url: http://localhost:3001/payment/result
+  gateway-url: https://openapi.alipaydev.com/gateway.do
+  charset: UTF-8
+  format: json
+  sign-type: RSA2
+  mock-payment: true

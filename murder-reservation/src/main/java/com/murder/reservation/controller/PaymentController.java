@@ -55,5 +55,44 @@ public class PaymentController {
         Integer status = paymentService.queryPaymentStatus(reservationId);
         return Result.success(status);
     }
+    
+    /**
+     * 申请退款（用户端）
+     */
+    @PostMapping("/refund/apply")
+    @Operation(summary = "申请退款")
+    public Result<String> applyRefund(
+            @RequestParam Long reservationId,
+            @RequestParam String reason) {
+        log.info("申请退款: reservationId={}, reason={}", reservationId, reason);
+        try {
+            paymentService.applyRefund(reservationId, reason);
+            return Result.success("退款申请已提交，请等待管理员审核");
+        } catch (Exception e) {
+            log.error("申请退款失败", e);
+            return Result.error(e.getMessage());
+        }
+    }
+    
+    /**
+     * 处理退款（管理端）
+     */
+    @PostMapping("/refund/process")
+    @Operation(summary = "处理退款")
+    public Result<String> processRefund(
+            @RequestParam Long reservationId,
+            @RequestParam Integer approved,
+            @RequestParam(required = false) String adminRemark) {
+        log.info("处理退款: reservationId={}, approved={}, adminRemark={}", 
+                reservationId, approved, adminRemark);
+        try {
+            paymentService.processRefund(reservationId, approved, adminRemark);
+            String message = approved == 1 ? "退款已同意并处理完成" : "退款已拒绝";
+            return Result.success(message);
+        } catch (Exception e) {
+            log.error("处理退款失败", e);
+            return Result.error(e.getMessage());
+        }
+    }
 }
 

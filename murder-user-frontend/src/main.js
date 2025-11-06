@@ -5,7 +5,7 @@ import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 import { createPinia } from 'pinia'
 import router from './router'
 import App from './App.vue'
-import { registerServiceWorker, showInstallPrompt } from './utils/pwa'
+// import { registerServiceWorker, showInstallPrompt } from './utils/pwa'  // 已禁用 PWA
 import { registerLazyDirective } from './directives/lazy'
 import './styles/animations.css'
 import './styles/background-themes.css'
@@ -35,5 +35,5 @@ registerLazyDirective(app)
 app.mount('#app')
 
 // 注册PWA（应用挂载后）
-registerServiceWorker()
-showInstallPrompt()
+// registerServiceWorker()  // 已禁用 PWA
+// showInstallPrompt()  // 已禁用 PWA

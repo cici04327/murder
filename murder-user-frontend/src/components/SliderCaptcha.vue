@@ -3,14 +3,13 @@
     <div class="captcha-header">
       <span class="captcha-title">{{ verified ? '✓ 验证成功' : '请完成安全验证' }}</span>
       <el-button 
-        text 
+        circle
         @click="refresh" 
         :icon="RefreshRight"
         size="small"
+        class="refresh-btn"
         v-if="!verified"
-      >
-        刷新
-      </el-button>
+      />
     </div>
     
     <div class="captcha-container" :class="{ verified: verified, failed: showError }">
@@ -20,11 +19,29 @@
         <!-- 滑块拼图 -->
         <canvas 
           ref="blockCanvas" 
-          :width="blockSize" 
+          :width="blockCanvasWidth" 
           :height="canvasHeight"
-          :style="{ left: blockLeft + 'px' }"
+          :style="{ left: (blockLeft - 10) + 'px' }"
           class="block-canvas"
         ></canvas>
+        <!-- 左侧拼图图标 -->
+        <div class="puzzle-icon left">
+          <svg viewBox="0 0 40 40" width="40" height="40">
+            <path d="M10,10 L10,15 Q10,20 15,20 Q10,20 10,25 L10,30 L15,30 Q20,30 20,25 Q20,30 25,30 L30,30 L30,25 Q30,20 25,20 Q30,20 30,15 L30,10 L25,10 Q20,10 20,15 Q20,10 15,10 Z" 
+                  fill="rgba(255,255,255,0.9)" 
+                  stroke="rgba(0,0,0,0.2)" 
+                  stroke-width="1"/>
+          </svg>
+        </div>
+        <!-- 右侧拼图图标 -->
+        <div class="puzzle-icon right">
+          <svg viewBox="0 0 40 40" width="40" height="40">
+            <path d="M10,10 L10,15 Q10,20 15,20 Q10,20 10,25 L10,30 L15,30 Q20,30 20,25 Q20,30 25,30 L30,30 L30,25 Q30,20 25,20 Q30,20 30,15 L30,10 L25,10 Q20,10 20,15 Q20,10 15,10 Z" 
+                  fill="rgba(255,255,255,0.9)" 
+                  stroke="rgba(0,0,0,0.2)" 
+                  stroke-width="1"/>
+          </svg>
+        </div>
       </div>
       
       <!-- 滑动条 -->
@@ -41,7 +58,7 @@
           <el-icon v-if="showError" color="#f56c6c"><Close /></el-icon>
         </div>
         <span class="slider-text" v-if="!verified && !showError">
-          {{ isDragging ? '继续拖动滑块' : '向右拖动滑块填充拼图' }}
+          向右滑动完成验证
         </span>
         <span class="slider-text success" v-if="verified">验证成功</span>
         <span class="slider-text error" v-if="showError">验证失败，请重试</span>
@@ -58,7 +75,7 @@ const props = defineProps({
   // 验证成功的误差范围（像素）
   tolerance: {
     type: Number,
-    default: 5
+    default: 3
   }
 })
 
@@ -68,6 +85,7 @@ const emit = defineEmits(['success', 'fail', 'refresh'])
 const canvasWidth = 350
 const canvasHeight = 200
 const blockSize = 50
+const blockCanvasWidth = 70 // 拼图块画布宽度（包含凸起）
 
 // 状态
 const bgCanvas = ref(null)
@@ -85,13 +103,18 @@ const blockY = ref(0)
 // 鼠标起始位置
 const startX = ref(0)
 
-// 背景图片
+// 背景图片 - 精选高质量风景图
 const bgImages = [
-  'https://images.unsplash.com/photo-1557683316-973673baf926?w=400',
-  'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=400',
-  'https://images.unsplash.com/photo-1557682250-33bd709cbe85?w=400',
-  'https://images.unsplash.com/photo-1579547945413-497e1b99dac0?w=400',
-  'https://images.unsplash.com/photo-1557682224-5b8590cd9ec5?w=400'
+  'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=250&fit=crop', // 山脉风景
+  'https://images.unsplash.com/photo-1511884642898-4c92249e20b6?w=400&h=250&fit=crop', // 海滩日落
+  'https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=400&h=250&fit=crop', // 森林小路
+  'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=400&h=250&fit=crop', // 湖泊倒影
+  'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=400&h=250&fit=crop', // 云海山峰
+  'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400&h=250&fit=crop', // 田园风光
+  'https://images.unsplash.com/photo-1501594907352-04cda38ebc29?w=400&h=250&fit=crop', // 海边落日
+  'https://images.unsplash.com/photo-1433086966358-54859d0ed716?w=400&h=250&fit=crop', // 雪山草地
+  'https://images.unsplash.com/photo-1426604966848-d7adac402bff?w=400&h=250&fit=crop', // 森林阳光
+  'https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?w=400&h=250&fit=crop'  // 樱花小道
 ]
 
 // 初始化验证码
@@ -124,48 +147,49 @@ const drawCaptcha = () => {
     bgCtx.clearRect(0, 0, canvasWidth, canvasHeight)
     bgCtx.drawImage(img, 0, 0, canvasWidth, canvasHeight)
     
-    // 在背景上绘制拼图凹槽（灰色半透明）
+    // 在背景上绘制拼图凹槽（带凸起的形状）
     drawPuzzleShape(bgCtx, blockX.value, blockY.value, 'destination-out')
     bgCtx.globalCompositeOperation = 'source-over'
     drawPuzzleOutline(bgCtx, blockX.value, blockY.value)
     
-    // 绘制拼图块
-    blockCtx.clearRect(0, 0, blockSize, canvasHeight)
-    blockCtx.drawImage(img, blockX.value, 0, blockSize, canvasHeight, 0, 0, blockSize, canvasHeight)
-    drawPuzzleShape(blockCtx, 0, blockY.value, 'destination-in')
+    // 绘制拼图块（完整的拼图形状，包含凸起）
+    blockCtx.clearRect(0, 0, blockCanvasWidth, canvasHeight)
+    // 先绘制完整的图片
+    blockCtx.drawImage(img, blockX.value - 10, 0, blockSize + 20, canvasHeight, 0, 0, blockSize + 20, canvasHeight)
+    // 使用拼图形状裁剪
+    drawPuzzleShape(blockCtx, 10, blockY.value, 'destination-in')
+    // 绘制轮廓
     blockCtx.globalCompositeOperation = 'source-over'
-    drawPuzzleOutline(blockCtx, 0, blockY.value)
+    drawPuzzleOutline(blockCtx, 10, blockY.value)
   }
 }
 
-// 绘制拼图形状（带凸起）
+// 绘制完整的拼图形状（只有凸起，没有凹陷）
 const drawPuzzleShape = (ctx, x, y, compositeOperation) => {
   ctx.save()
   ctx.globalCompositeOperation = compositeOperation || 'source-over'
   ctx.beginPath()
   
-  const radius = 10
-  const protrusion = 8
+  const r = 10 // 凸起的半径
+  const PI = Math.PI
   
-  // 顶边
+  // 从左上角开始，顺时针绘制完整的拼图块
   ctx.moveTo(x, y)
-  ctx.lineTo(x + blockSize / 2 - protrusion, y)
-  ctx.arc(x + blockSize / 2, y, protrusion, Math.PI, 0, false)
+  
+  // 顶边 - 凸起（向上）
+  ctx.lineTo(x + blockSize / 2 - r, y)
+  ctx.arc(x + blockSize / 2, y - r, r, PI, 0, false)
   ctx.lineTo(x + blockSize, y)
   
-  // 右边
-  ctx.lineTo(x + blockSize, y + blockSize / 2 - protrusion)
-  ctx.arc(x + blockSize, y + blockSize / 2, protrusion, 1.5 * Math.PI, 0.5 * Math.PI, false)
+  // 右边 - 凸起（向右）
+  ctx.lineTo(x + blockSize, y + blockSize / 2 - r)
+  ctx.arc(x + blockSize + r, y + blockSize / 2, r, PI, 0, false)
   ctx.lineTo(x + blockSize, y + blockSize)
   
-  // 底边
-  ctx.lineTo(x + blockSize / 2 + protrusion, y + blockSize)
-  ctx.arc(x + blockSize / 2, y + blockSize, protrusion, 0, Math.PI, false)
+  // 底边 - 平直（无凸起）
   ctx.lineTo(x, y + blockSize)
   
-  // 左边
-  ctx.lineTo(x, y + blockSize / 2 + protrusion)
-  ctx.arc(x, y + blockSize / 2, protrusion, 0.5 * Math.PI, 1.5 * Math.PI, false)
+  // 左边 - 平直（无凸起）
   ctx.lineTo(x, y)
   
   ctx.closePath()
@@ -176,25 +200,32 @@ const drawPuzzleShape = (ctx, x, y, compositeOperation) => {
 // 绘制拼图轮廓
 const drawPuzzleOutline = (ctx, x, y) => {
   ctx.save()
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)'
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)'
   ctx.lineWidth = 2
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.5)'
+  ctx.shadowBlur = 3
   ctx.beginPath()
   
-  const radius = 10
-  const protrusion = 8
+  const r = 10
+  const PI = Math.PI
   
+  // 从左上角开始，顺时针绘制轮廓
   ctx.moveTo(x, y)
-  ctx.lineTo(x + blockSize / 2 - protrusion, y)
-  ctx.arc(x + blockSize / 2, y, protrusion, Math.PI, 0, false)
+  
+  // 顶边 - 凸起（向上）
+  ctx.lineTo(x + blockSize / 2 - r, y)
+  ctx.arc(x + blockSize / 2, y - r, r, PI, 0, false)
   ctx.lineTo(x + blockSize, y)
-  ctx.lineTo(x + blockSize, y + blockSize / 2 - protrusion)
-  ctx.arc(x + blockSize, y + blockSize / 2, protrusion, 1.5 * Math.PI, 0.5 * Math.PI, false)
+  
+  // 右边 - 凸起（向右）
+  ctx.lineTo(x + blockSize, y + blockSize / 2 - r)
+  ctx.arc(x + blockSize + r, y + blockSize / 2, r, PI, 0, false)
   ctx.lineTo(x + blockSize, y + blockSize)
-  ctx.lineTo(x + blockSize / 2 + protrusion, y + blockSize)
-  ctx.arc(x + blockSize / 2, y + blockSize, protrusion, 0, Math.PI, false)
+  
+  // 底边 - 平直
   ctx.lineTo(x, y + blockSize)
-  ctx.lineTo(x, y + blockSize / 2 + protrusion)
-  ctx.arc(x, y + blockSize / 2, protrusion, 0.5 * Math.PI, 1.5 * Math.PI, false)
+  
+  // 左边 - 平直
   ctx.lineTo(x, y)
   
   ctx.stroke()
@@ -246,7 +277,18 @@ const handleDragEnd = () => {
 
 // 验证
 const verify = () => {
+  // 拼图块画布向左偏移了10px，但拼图形状在画布上从x=10开始
+  // 所以实际拼图的左边缘位置就是 blockLeft
   const distance = Math.abs(blockLeft.value - blockX.value)
+  
+  // 调试信息
+  console.log('验证信息:', {
+    滑块位置: blockLeft.value,
+    目标位置: blockX.value,
+    距离差: distance,
+    容忍度: props.tolerance,
+    是否通过: distance <= props.tolerance
+  })
   
   if (distance <= props.tolerance) {
     // 验证成功
@@ -264,7 +306,7 @@ const verify = () => {
       distance: distance
     })
     
-    // 2秒后重置
+    // 1.5秒后重置
     setTimeout(() => {
       refresh()
     }, 1500)
@@ -308,28 +350,38 @@ onMounted(() => {
 }
 
 .captcha-title {
-  font-size: 14px;
-  color: #606266;
+  font-size: 15px;
+  color: #333;
   font-weight: 500;
+}
+
+.refresh-btn {
+  color: #67c23a;
+  border-color: #67c23a;
+}
+
+.refresh-btn:hover {
+  background: #f0f9ff;
+  color: #67c23a;
+  border-color: #67c23a;
 }
 
 .captcha-container {
   width: 100%;
-  background: #f5f7fa;
-  border-radius: 8px;
+  background: #fff;
+  border-radius: 4px;
   overflow: hidden;
   transition: all 0.3s;
-  border: 2px solid #e4e7ed;
+  border: 1px solid #dcdfe6;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
 }
 
 .captcha-container.verified {
   border-color: #67c23a;
-  background: #f0f9ff;
 }
 
 .captcha-container.failed {
   border-color: #f56c6c;
-  background: #fef0f0;
   animation: shake 0.5s;
 }
 
@@ -357,21 +409,38 @@ onMounted(() => {
   transition: none;
 }
 
+.puzzle-icon {
+  position: absolute;
+  top: 20px;
+  z-index: 5;
+  opacity: 0.95;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+.puzzle-icon.left {
+  left: 15px;
+}
+
+.puzzle-icon.right {
+  right: 15px;
+}
+
 .slider-track {
   position: relative;
   height: 50px;
-  background: #e4e7ed;
+  background: #f7f8fa;
   display: flex;
   align-items: center;
   transition: all 0.3s;
+  border-top: 1px solid #e4e7ed;
 }
 
 .slider-track.verified {
-  background: #67c23a;
+  background: #f0f9ff;
 }
 
 .slider-track.failed {
-  background: #f56c6c;
+  background: #fef0f0;
 }
 
 .slider-fill {
@@ -379,17 +448,17 @@ onMounted(() => {
   left: 0;
   top: 0;
   height: 100%;
-  background: linear-gradient(90deg, #409eff, #667eea);
+  background: rgba(103, 194, 58, 0.1);
   transition: width 0.1s;
   pointer-events: none;
 }
 
 .slider-track.verified .slider-fill {
-  background: linear-gradient(90deg, #67c23a, #85ce61);
+  background: rgba(103, 194, 58, 0.2);
 }
 
 .slider-track.failed .slider-fill {
-  background: linear-gradient(90deg, #f56c6c, #f78989);
+  background: rgba(245, 108, 108, 0.2);
 }
 
 .slider-button {
@@ -400,27 +469,45 @@ onMounted(() => {
   width: 50px;
   height: 50px;
   background: #fff;
-  border-radius: 4px;
+  border: 1px solid #dcdfe6;
+  border-radius: 2px;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  transition: all 0.3s;
+  cursor: grab;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s;
   z-index: 10;
 }
 
 .slider-button:hover {
-  background: #f5f7fa;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.15);
 }
 
 .slider-button:active {
-  transform: translateY(-50%) scale(0.95);
+  cursor: grabbing;
+  transform: translateY(-50%) scale(0.98);
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.15);
+}
+
+.slider-track.verified .slider-button {
+  background: #67c23a;
+  border-color: #67c23a;
+}
+
+.slider-track.failed .slider-button {
+  background: #f56c6c;
+  border-color: #f56c6c;
 }
 
 .slider-button .el-icon {
-  font-size: 24px;
+  font-size: 22px;
+  color: #909399;
+}
+
+.slider-track.verified .slider-button .el-icon,
+.slider-track.failed .slider-button .el-icon {
+  color: #fff;
 }
 
 .slider-text {
@@ -435,10 +522,12 @@ onMounted(() => {
 }
 
 .slider-text.success {
-  color: #fff;
+  color: #67c23a;
+  font-weight: 500;
 }
 
 .slider-text.error {
-  color: #fff;
+  color: #f56c6c;
+  font-weight: 500;
 }
 </style>

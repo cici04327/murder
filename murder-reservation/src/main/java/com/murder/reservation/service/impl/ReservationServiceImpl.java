@@ -33,12 +33,20 @@ public class ReservationServiceImpl implements ReservationService {
     
     @Autowired(required = false)
     private RestTemplate restTemplate;
+    
+    @Autowired(required = false)
+    private com.murder.reservation.service.ReviewService reviewService;
+    
+    @Autowired(required = false)
+    private com.murder.common.feign.UserFeignClient userFeignClient;
+    
+    @Autowired(required = false)
+    private com.murder.common.feign.StoreFeignClient storeFeignClient;
+    
+    @Autowired(required = false)
+    private com.murder.common.feign.ScriptFeignClient scriptFeignClient;
 
     private static final AtomicLong SEQUENCE = new AtomicLong(1);
-    
-    private static final String USER_SERVICE_URL = "http://localhost:8082";
-    private static final String STORE_SERVICE_URL = "http://localhost:8083";
-    private static final String SCRIPT_SERVICE_URL = "http://localhost:8084";
 
     /**
      * 创建预约
@@ -143,16 +151,36 @@ public class ReservationServiceImpl implements ReservationService {
      * 分页查询预约列表（包含关联信息）
      */
     @Override
-    public PageResult<com.murder.pojo.vo.ReservationVO> pageQueryWithDetails(Integer page, Integer pageSize, Long userId, Integer status) {
-        // 先获取基础分页数据
-        PageResult<Reservation> pageResult = pageQuery(page, pageSize, userId, status);
+    public PageResult<com.murder.pojo.vo.ReservationVO> pageQueryWithDetails(Integer page, Integer pageSize, Long userId, Integer status, Integer refundStatus, Boolean hasRefund) {
+        Page<Reservation> pageInfo = new Page<>(page, pageSize);
+        
+        LambdaQueryWrapper<Reservation> wrapper = new LambdaQueryWrapper<>();
+        if (userId != null) {
+            wrapper.eq(Reservation::getUserId, userId);
+        }
+        if (status != null) {
+            wrapper.eq(Reservation::getStatus, status);
+        }
+        if (refundStatus != null) {
+            wrapper.eq(Reservation::getRefundStatus, refundStatus);
+        }
+        if (hasRefund != null && hasRefund) {
+            // 查询有退款申请的订单（refundStatus > 0）
+            wrapper.gt(Reservation::getRefundStatus, 0);
+        }
+        wrapper.orderByDesc(Reservation::getCreateTime);
+        
+        // 手动查询总数
+        Long total = reservationMapper.selectCount(wrapper);
+        
+        reservationMapper.selectPage(pageInfo, wrapper);
         
         // 转换为VO列表
-        java.util.List<com.murder.pojo.vo.ReservationVO> voList = pageResult.getRecords().stream()
+        java.util.List<com.murder.pojo.vo.ReservationVO> voList = pageInfo.getRecords().stream()
                 .map(this::convertToVO)
                 .collect(java.util.stream.Collectors.toList());
         
-        return new PageResult<>(pageResult.getTotal(), voList);
+        return new PageResult<>(total, voList);
     }
     
     /**
@@ -165,12 +193,11 @@ public class ReservationServiceImpl implements ReservationService {
         // 查询关联信息
         try {
             // 查询剧本名称
-            if (reservation.getScriptId() != null && restTemplate != null) {
+            if (reservation.getScriptId() != null && scriptFeignClient != null) {
                 try {
-                    String scriptUrl = SCRIPT_SERVICE_URL + "/script/" + reservation.getScriptId();
-                    Map<String, Object> scriptResponse = restTemplate.getForObject(scriptUrl, Map.class);
-                    if (scriptResponse != null && scriptResponse.get("data") != null) {
-                        Map<String, Object> script = (Map<String, Object>) scriptResponse.get("data");
+                    com.murder.common.result.Result scriptResult = scriptFeignClient.getScriptById(reservation.getScriptId());
+                    if (scriptResult != null && scriptResult.getData() != null) {
+                        Map<String, Object> script = (Map<String, Object>) scriptResult.getData();
                         vo.setScriptName((String) script.get("name"));
                     }
                 } catch (Exception e) {
@@ -179,12 +206,11 @@ public class ReservationServiceImpl implements ReservationService {
             }
             
             // 查询门店名称
-            if (reservation.getStoreId() != null && restTemplate != null) {
+            if (reservation.getStoreId() != null && storeFeignClient != null) {
                 try {
-                    String storeUrl = STORE_SERVICE_URL + "/store/" + reservation.getStoreId();
-                    Map<String, Object> storeResponse = restTemplate.getForObject(storeUrl, Map.class);
-                    if (storeResponse != null && storeResponse.get("data") != null) {
-                        Map<String, Object> store = (Map<String, Object>) storeResponse.get("data");
+                    com.murder.common.result.Result storeResult = storeFeignClient.getStoreById(reservation.getStoreId());
+                    if (storeResult != null && storeResult.getData() != null) {
+                        Map<String, Object> store = (Map<String, Object>) storeResult.getData();
                         vo.setStoreName((String) store.get("name"));
                     }
                 } catch (Exception e) {
@@ -193,12 +219,11 @@ public class ReservationServiceImpl implements ReservationService {
             }
             
             // 查询房间名称和容量
-            if (reservation.getRoomId() != null && restTemplate != null) {
+            if (reservation.getRoomId() != null && storeFeignClient != null) {
                 try {
-                    String roomUrl = STORE_SERVICE_URL + "/store/room/detail/" + reservation.getRoomId();
-                    Map<String, Object> roomResponse = restTemplate.getForObject(roomUrl, Map.class);
-                    if (roomResponse != null && roomResponse.get("data") != null) {
-                        Map<String, Object> room = (Map<String, Object>) roomResponse.get("data");
+                    com.murder.common.result.Result roomResult = storeFeignClient.getRoomDetail(reservation.getRoomId());
+                    if (roomResult != null && roomResult.getData() != null) {
+                        Map<String, Object> room = (Map<String, Object>) roomResult.getData();
                         vo.setRoomName((String) room.get("name"));
                         if (room.get("capacity") != null) {
                             vo.setRoomCapacity((Integer) room.get("capacity"));
@@ -210,6 +235,19 @@ public class ReservationServiceImpl implements ReservationService {
             }
         } catch (Exception e) {
             log.warn("查询关联信息时出错: {}", e.getMessage());
+        }
+        
+        // 检查是否已评价
+        try {
+            if (reviewService != null && reservation.getId() != null) {
+                com.murder.pojo.entity.Review review = reviewService.getByReservationId(reservation.getId());
+                vo.setHasReviewed(review != null ? 1 : 0);
+            } else {
+                vo.setHasReviewed(0);
+            }
+        } catch (Exception e) {
+            log.debug("检查评价状态失败: {}", e.getMessage());
+            vo.setHasReviewed(0);
         }
         
         return vo;
@@ -237,12 +275,11 @@ public class ReservationServiceImpl implements ReservationService {
         org.springframework.beans.BeanUtils.copyProperties(reservation, vo);
         
         // 查询门店信息
-        if (reservation.getStoreId() != null && restTemplate != null) {
+        if (reservation.getStoreId() != null && storeFeignClient != null) {
             try {
-                String url = STORE_SERVICE_URL + "/store/" + reservation.getStoreId();
-                Map<String, Object> storeResponse = restTemplate.getForObject(url, Map.class);
-                if (storeResponse != null && storeResponse.get("data") != null) {
-                    Map<String, Object> store = (Map<String, Object>) storeResponse.get("data");
+                com.murder.common.result.Result storeResult = storeFeignClient.getStoreById(reservation.getStoreId());
+                if (storeResult != null && storeResult.getData() != null) {
+                    Map<String, Object> store = (Map<String, Object>) storeResult.getData();
                     vo.setStoreName((String) store.get("name"));
                     vo.setStoreAddress((String) store.get("address"));
                     vo.setStorePhone((String) store.get("phone"));
@@ -253,12 +290,11 @@ public class ReservationServiceImpl implements ReservationService {
         }
         
         // 查询剧本信息
-        if (reservation.getScriptId() != null && restTemplate != null) {
+        if (reservation.getScriptId() != null && scriptFeignClient != null) {
             try {
-                String url = SCRIPT_SERVICE_URL + "/script/" + reservation.getScriptId();
-                Map<String, Object> scriptResponse = restTemplate.getForObject(url, Map.class);
-                if (scriptResponse != null && scriptResponse.get("data") != null) {
-                    Map<String, Object> script = (Map<String, Object>) scriptResponse.get("data");
+                com.murder.common.result.Result scriptResult = scriptFeignClient.getScriptById(reservation.getScriptId());
+                if (scriptResult != null && scriptResult.getData() != null) {
+                    Map<String, Object> script = (Map<String, Object>) scriptResult.getData();
                     vo.setScriptName((String) script.get("name"));
                     vo.setScriptCover((String) script.get("cover"));
                 }
@@ -268,12 +304,11 @@ public class ReservationServiceImpl implements ReservationService {
         }
         
         // 查询房间信息
-        if (reservation.getRoomId() != null && restTemplate != null) {
+        if (reservation.getRoomId() != null && storeFeignClient != null) {
             try {
-                String url = STORE_SERVICE_URL + "/store/room/detail/" + reservation.getRoomId();
-                Map<String, Object> roomResponse = restTemplate.getForObject(url, Map.class);
-                if (roomResponse != null && roomResponse.get("data") != null) {
-                    Map<String, Object> room = (Map<String, Object>) roomResponse.get("data");
+                com.murder.common.result.Result roomResult = storeFeignClient.getRoomDetail(reservation.getRoomId());
+                if (roomResult != null && roomResult.getData() != null) {
+                    Map<String, Object> room = (Map<String, Object>) roomResult.getData();
                     vo.setRoomName((String) room.get("name"));
                     if (room.get("capacity") != null) {
                         vo.setRoomCapacity((Integer) room.get("capacity"));
@@ -282,6 +317,19 @@ public class ReservationServiceImpl implements ReservationService {
             } catch (Exception e) {
                 log.error("查询房间信息失败: {}", e.getMessage());
             }
+        }
+        
+        // 检查是否已评价
+        try {
+            if (reviewService != null && reservation.getId() != null) {
+                com.murder.pojo.entity.Review review = reviewService.getByReservationId(reservation.getId());
+                vo.setHasReviewed(review != null ? 1 : 0);
+            } else {
+                vo.setHasReviewed(0);
+            }
+        } catch (Exception e) {
+            log.debug("检查评价状态失败: {}", e.getMessage());
+            vo.setHasReviewed(0);
         }
         
         return vo;
@@ -350,6 +398,11 @@ public class ReservationServiceImpl implements ReservationService {
         reservation.setStatus(3); // 已完成
         reservationMapper.updateById(reservation);
         
+        log.info("预约订单已完成: id={}, orderNo={}", id, existingReservation.getOrderNo());
+        
+        // 注意：支付时已经奖励过100积分，这里不再重复奖励
+        // 如果需要完成时再奖励，取消下面的注释
+        /*
         // 增加积分奖励（完成预约获得100积分）
         try {
             addPointsForReservation(existingReservation.getUserId(), id);
@@ -357,6 +410,54 @@ public class ReservationServiceImpl implements ReservationService {
             log.error("完成预约增加积分失败", e);
             // 积分失败不影响预约完成
         }
+        */
+    }
+    
+    /**
+     * 获取可以完成的预约列表（预约时间+时长已过的已确认订单）
+     */
+    @Override
+    public List<Reservation> getCompletableReservations() {
+        LocalDateTime now = LocalDateTime.now();
+        
+        // 查询已确认的预约
+        LambdaQueryWrapper<Reservation> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Reservation::getStatus, 2); // 已确认
+        wrapper.le(Reservation::getReservationTime, now); // 预约时间小于等于当前时间
+        
+        List<Reservation> reservations = reservationMapper.selectList(wrapper);
+        
+        // 过滤出预约时间+时长已过的订单
+        List<Reservation> completableList = new java.util.ArrayList<>();
+        for (Reservation reservation : reservations) {
+            // 将BigDecimal转换为double，然后向上取整
+            double durationHours = reservation.getDuration() != null 
+                    ? reservation.getDuration().doubleValue() 
+                    : 3.0;
+            LocalDateTime endTime = reservation.getReservationTime()
+                    .plusHours((long) Math.ceil(durationHours));
+            if (endTime.isBefore(now)) {
+                completableList.add(reservation);
+            }
+        }
+        
+        log.info("查询到{}个可完成的预约订单", completableList.size());
+        return completableList;
+    }
+    
+    /**
+     * 获取超时未支付的预约列表
+     */
+    @Override
+    public List<Reservation> getUnpaidReservations(LocalDateTime timeoutTime) {
+        LambdaQueryWrapper<Reservation> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Reservation::getPayStatus, 0); // 未支付
+        wrapper.in(Reservation::getStatus, 0, 1); // 待支付或待确认
+        wrapper.lt(Reservation::getCreateTime, timeoutTime); // 创建时间早于超时时间
+        
+        List<Reservation> reservations = reservationMapper.selectList(wrapper);
+        log.info("查询到{}个超时未支付的预约订单", reservations.size());
+        return reservations;
     }
 
     /**
@@ -419,18 +520,16 @@ public class ReservationServiceImpl implements ReservationService {
      * 计算优惠券折扣
      */
     private BigDecimal calculateCouponDiscount(Long userCouponId, BigDecimal orderAmount) {
-        if (restTemplate == null) {
-            log.warn("RestTemplate未配置，无法调用优惠券服务");
+        if (userFeignClient == null) {
+            log.warn("UserFeignClient未配置，无法调用优惠券服务");
             return BigDecimal.ZERO;
         }
         
         try {
-            String url = USER_SERVICE_URL + "/coupon/calculate?userCouponId=" + userCouponId 
-                    + "&orderAmount=" + orderAmount;
-            Map<String, Object> response = restTemplate.getForObject(url, Map.class);
+            com.murder.common.result.Result result = userFeignClient.calculateCouponDiscount(userCouponId, orderAmount);
             
-            if (response != null && response.get("data") != null) {
-                return new BigDecimal(response.get("data").toString());
+            if (result != null && result.getData() != null) {
+                return new BigDecimal(result.getData().toString());
             }
         } catch (Exception e) {
             log.error("调用优惠券服务计算折扣失败", e);
@@ -443,15 +542,13 @@ public class ReservationServiceImpl implements ReservationService {
      * 增加预约积分奖励
      */
     private void addPointsForReservation(Long userId, Long reservationId) {
-        if (restTemplate == null) {
-            log.warn("RestTemplate未配置，无法调用积分服务");
+        if (userFeignClient == null) {
+            log.warn("UserFeignClient未配置，无法调用积分服务");
             return;
         }
         
         try {
-            String url = USER_SERVICE_URL + "/user/points/reward-reservation?userId=" + userId 
-                    + "&reservationId=" + reservationId;
-            restTemplate.postForObject(url, null, String.class);
+            userFeignClient.rewardPointsForReservation(userId, reservationId);
             log.info("用户{}完成预约{}，获得100积分", userId, reservationId);
         } catch (Exception e) {
             log.error("调用积分服务失败", e);
@@ -463,15 +560,13 @@ public class ReservationServiceImpl implements ReservationService {
      * 使用优惠券
      */
     private void useCoupon(Long userCouponId, Long orderId) {
-        if (restTemplate == null) {
-            log.warn("RestTemplate未配置，无法调用优惠券服务");
+        if (userFeignClient == null) {
+            log.warn("UserFeignClient未配置，无法调用优惠券服务");
             return;
         }
         
         try {
-            String url = USER_SERVICE_URL + "/coupon/use?userCouponId=" + userCouponId 
-                    + "&orderId=" + orderId;
-            restTemplate.put(url, null);
+            userFeignClient.useCoupon(userCouponId, orderId);
             log.info("优惠券使用成功: userCouponId={}, orderId={}", userCouponId, orderId);
         } catch (Exception e) {
             log.error("使用优惠券失败", e);
@@ -483,14 +578,13 @@ public class ReservationServiceImpl implements ReservationService {
      * 退还优惠券
      */
     private void refundCoupon(Long orderId) {
-        if (restTemplate == null) {
-            log.warn("RestTemplate未配置，无法调用优惠券服务");
+        if (userFeignClient == null) {
+            log.warn("UserFeignClient未配置，无法调用优惠券服务");
             return;
         }
         
         try {
-            String url = USER_SERVICE_URL + "/coupon/refund?orderId=" + orderId;
-            restTemplate.put(url, null);
+            userFeignClient.refundCoupon(orderId);
             log.info("优惠券退还成功: orderId={}", orderId);
         } catch (Exception e) {
             log.error("退还优惠券失败", e);
@@ -502,8 +596,8 @@ public class ReservationServiceImpl implements ReservationService {
      * 发送预约成功通知
      */
     private void sendReservationSuccessNotification(Reservation reservation) {
-        if (restTemplate == null) {
-            log.warn("RestTemplate未配置，无法发送通知");
+        if (userFeignClient == null) {
+            log.warn("UserFeignClient未配置，无法发送通知");
             return;
         }
         
@@ -521,8 +615,7 @@ public class ReservationServiceImpl implements ReservationService {
             notificationData.put("bizId", reservation.getId());
             notificationData.put("userIds", new Long[]{reservation.getUserId()});
             
-            String url = USER_SERVICE_URL + "/notification/send";
-            restTemplate.postForObject(url, notificationData, Map.class);
+            userFeignClient.sendNotification(notificationData);
             
             log.info("发送预约成功通知: userId={}, reservationId={}", reservation.getUserId(), reservation.getId());
         } catch (Exception e) {

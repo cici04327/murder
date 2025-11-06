@@ -1,15 +1,32 @@
 <template>
-  <div class="info-page">
+  <div class="info-page agreement-page">
     <!-- 阅读进度条 -->
     <ReadingProgress />
     
     <!-- 面包屑导航 -->
     <InfoPageBreadcrumb />
     
+    <!-- 头部横幅 -->
+    <div class="hero-banner">
+      <div class="hero-content">
+        <h1 class="hero-title animate-fade-in-up">
+          <span class="gradient-text">用户服务协议</span>
+        </h1>
+        <p class="hero-subtitle animate-fade-in-up delay-1">
+          请仔细阅读以下条款，使用我们的服务即表示您同意本协议
+        </p>
+        <div class="agreement-meta animate-fade-in-up delay-2">
+          <span>📅 更新日期：2024年11月</span>
+          <span>📄 版本：V2.0</span>
+          <span>⏱️ 预计阅读时间：10分钟</span>
+        </div>
+      </div>
+    </div>
+    
     <el-card class="info-card animate-fade-in">
       <template #header>
         <div class="card-header">
-          <h2><el-icon><Document /></el-icon> 用户协议</h2>
+          <h2><el-icon><Document /></el-icon> 用户协议详情</h2>
         </div>
       </template>
       
@@ -151,8 +168,8 @@ import { useTheme } from '@/composables/useTheme'
 
 // 初始化
 useScrollReveal()
-const { initTheme } = useTheme()
-initTheme()
+const { loadTheme } = useTheme()
+loadTheme()
 
 const anchorList = ref([
   '一、协议的范围',
@@ -171,7 +188,80 @@ const anchorList = ref([
 </script>
 
 <style scoped>
+@import '@/styles/info-enhanced.css';
 @import '@/styles/info-theme.css';
+
+/* 协议元信息 */
+.agreement-meta {
+  display: flex;
+  gap: 30px;
+  justify-content: center;
+  margin-top: 30px;
+  font-size: 14px;
+}
+
+.agreement-meta span {
+  padding: 8px 16px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 20px;
+  backdrop-filter: blur(10px);
+}
+
+/* 协议内容样式 */
+.agreement-content h3 {
+  font-size: 22px;
+  color: #2c3e50;
+  margin: 30px 0 15px;
+  padding-left: 15px;
+  border-left: 4px solid #667eea;
+}
+
+.agreement-content h4 {
+  font-size: 18px;
+  color: #34495e;
+  margin: 20px 0 10px;
+}
+
+.agreement-content p {
+  line-height: 1.8;
+  color: #555;
+  margin-bottom: 15px;
+  text-align: justify;
+}
+
+.agreement-content ul {
+  padding-left: 30px;
+  margin: 15px 0;
+}
+
+.agreement-content li {
+  line-height: 1.8;
+  color: #555;
+  margin-bottom: 8px;
+}
+
+/* 重要提示框 */
+.important-notice {
+  background: linear-gradient(135deg, #fff3cd 0%, #fff8e1 100%);
+  border-left: 4px solid #ffc107;
+  padding: 20px;
+  margin: 20px 0;
+  border-radius: 8px;
+}
+
+.important-notice h4 {
+  color: #856404;
+  margin-bottom: 10px;
+}
+
+/* 协议接受按钮 */
+.agreement-actions {
+  text-align: center;
+  margin-top: 40px;
+  padding: 30px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #ffffff 100%);
+  border-radius: 12px;
+}
 
 .info-page {
   padding: 20px;

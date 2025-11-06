@@ -18,15 +18,28 @@
             placeholder="请输入密码"
             prefix-icon="Lock"
             size="large"
+            show-password
             @keyup.enter="handleLogin"
           />
         </el-form-item>
+        
+        <!-- 滑块验证码 -->
+        <el-form-item>
+          <SliderCaptcha 
+            ref="captchaRef"
+            @success="handleCaptchaSuccess"
+            @fail="handleCaptchaFail"
+            @refresh="handleCaptchaRefresh"
+          />
+        </el-form-item>
+        
         <el-form-item>
           <el-button
             type="primary"
             size="large"
             style="width: 100%"
             :loading="loading"
+            :disabled="!captchaVerified"
             @click="handleLogin"
           >
             登录
@@ -42,10 +55,13 @@ import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { userService } from '@/utils/request'
+import SliderCaptcha from '@/components/SliderCaptcha.vue'
 
 const router = useRouter()
 const loginFormRef = ref(null)
+const captchaRef = ref(null)
 const loading = ref(false)
+const captchaVerified = ref(false)
 
 const loginForm = reactive({
   username: 'test_user',
@@ -57,7 +73,30 @@ const rules = {
   password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
 }
 
+// 验证码成功回调
+const handleCaptchaSuccess = () => {
+  captchaVerified.value = true
+  ElMessage.success('验证成功')
+}
+
+// 验证码失败回调
+const handleCaptchaFail = () => {
+  captchaVerified.value = false
+  ElMessage.error('验证失败，请重试')
+}
+
+// 验证码刷新回调
+const handleCaptchaRefresh = () => {
+  captchaVerified.value = false
+}
+
 const handleLogin = async () => {
+  // 检查验证码
+  if (!captchaVerified.value) {
+    ElMessage.warning('请先完成安全验证')
+    return
+  }
+  
   try {
     await loginFormRef.value.validate()
     loading.value = true
@@ -80,10 +119,20 @@ const handleLogin = async () => {
       }, 100)
     } else {
       ElMessage.error(res.msg || '登录失败')
+      // 登录失败，重置验证码
+      captchaVerified.value = false
+      if (captchaRef.value) {
+        captchaRef.value.reset()
+      }
     }
   } catch (error) {
     console.error('登录失败:', error)
     ElMessage.error(error.message || '登录异常')
+    // 登录失败，重置验证码
+    captchaVerified.value = false
+    if (captchaRef.value) {
+      captchaRef.value.reset()
+    }
   } finally {
     loading.value = false
   }

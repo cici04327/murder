@@ -3,6 +3,7 @@ package com.murder.script;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
+import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.context.annotation.ComponentScan;
 
 /**
@@ -10,6 +11,7 @@ import org.springframework.context.annotation.ComponentScan;
  */
 @SpringBootApplication
 @EnableDiscoveryClient
+@EnableFeignClients(basePackages = "com.murder.common.feign")  // 启用OpenFeign客户端，明确指定扫描路径
 @ComponentScan(basePackages = {"com.murder.script", "com.murder.common"})
 public class ScriptApplication {
 

@@ -405,7 +405,7 @@ const newsList = ref([
     title: '剧本杀新手入门指南',
     summary: '从零开始，带你了解剧本杀的魅力',
     category: '新手攻略',
-    image: 'https://via.placeholder.com/300x200/667eea/ffffff?text=新手指南',
+    image: 'https://dummyimage.com/300x200/667eea/ffffff&text=新手指南',
     date: '2024-01-15',
     views: 1234
   },
@@ -414,7 +414,7 @@ const newsList = ref([
     title: '如何选择适合自己的剧本',
     summary: '根据难度、类型、人数选择最适合的剧本',
     category: '选本技巧',
-    image: 'https://via.placeholder.com/300x200/f093fb/ffffff?text=选本技巧',
+    image: 'https://dummyimage.com/300x200/f093fb/ffffff&text=选本技巧',
     date: '2024-01-14',
     views: 856
   },
@@ -423,7 +423,7 @@ const newsList = ref([
     title: '2024年度热门剧本排行榜',
     summary: '盘点本年度最受欢迎的十大剧本',
     category: '榜单推荐',
-    image: 'https://via.placeholder.com/300x200/4facfe/ffffff?text=热门榜单',
+    image: 'https://dummyimage.com/300x200/4facfe/ffffff&text=热门榜单',
     date: '2024-01-13',
     views: 2341
   },
@@ -432,7 +432,7 @@ const newsList = ref([
     title: '剧本杀行业发展趋势分析',
     summary: '探讨剧本杀行业的未来发展方向',
     category: '行业动态',
-    image: 'https://via.placeholder.com/300x200/43e97b/ffffff?text=行业动态',
+    image: 'https://dummyimage.com/300x200/43e97b/ffffff&text=行业动态',
     date: '2024-01-12',
     views: 678
   }

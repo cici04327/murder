@@ -24,7 +24,7 @@ public interface ReservationService {
     /**
      * 分页查询预约列表（包含关联信息）
      */
-    PageResult<com.murder.pojo.vo.ReservationVO> pageQueryWithDetails(Integer page, Integer pageSize, Long userId, Integer status);
+    PageResult<com.murder.pojo.vo.ReservationVO> pageQueryWithDetails(Integer page, Integer pageSize, Long userId, Integer status, Integer refundStatus, Boolean hasRefund);
 
     /**
      * 根据ID查询预约详情
@@ -55,6 +55,16 @@ public interface ReservationService {
      * 完成预约
      */
     void complete(Long id);
+    
+    /**
+     * 获取可以完成的预约列表（预约时间+时长已过的已确认订单）
+     */
+    List<Reservation> getCompletableReservations();
+    
+    /**
+     * 获取超时未支付的预约列表
+     */
+    List<Reservation> getUnpaidReservations(java.time.LocalDateTime timeoutTime);
 
     /**
      * 支付预约

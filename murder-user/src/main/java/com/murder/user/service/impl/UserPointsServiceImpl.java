@@ -9,12 +9,14 @@ import com.murder.pojo.vo.UserPointsRecordVO;
 import com.murder.user.mapper.UserMapper;
 import com.murder.user.mapper.UserPointsRecordMapper;
 import com.murder.user.service.UserPointsService;
+import com.murder.user.service.VipService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -36,6 +38,9 @@ public class UserPointsServiceImpl implements UserPointsService {
 
     @Autowired
     private UserMapper userMapper;
+
+    @Autowired
+    private VipService vipService;
 
     /**
      * 获取用户积分信息（含统计数据）
@@ -113,12 +118,12 @@ public class UserPointsServiceImpl implements UserPointsService {
     }
 
     /**
-     * 增加积分
+     * 增加积分（含VIP加成）
      */
     @Override
     @Transactional
     public void addPoints(Long userId, Integer points, String reason) {
-        log.info("增加积分开始: userId={}, points={}, reason={}", userId, points, reason);
+        log.info("增加积分开始: userId={}, 原始积分={}, reason={}", userId, points, reason);
         
         // 更新用户积分
         User user = userMapper.selectById(userId);
@@ -134,7 +139,35 @@ public class UserPointsServiceImpl implements UserPointsService {
             log.warn("用户积分为null，初始化为0: userId={}", userId);
         }
         
-        Integer newPoints = currentPoints + points;
+        // ========== VIP积分加成 ==========
+        Integer originalPoints = points; // 原始积分
+        Integer finalPoints = points;     // 最终积分
+        BigDecimal multiplier = BigDecimal.ONE;
+        String bonusInfo = "";
+        
+        try {
+            // 获取VIP积分倍率
+            multiplier = vipService.getPointMultiplier(userId);
+            if (multiplier != null && multiplier.compareTo(BigDecimal.ONE) > 0) {
+                // 应用VIP加成（原始积分 * 倍率）
+                finalPoints = BigDecimal.valueOf(originalPoints)
+                        .multiply(multiplier)
+                        .intValue();
+                
+                int bonusPoints = finalPoints - originalPoints;
+                bonusInfo = String.format(" [VIP加成: %s倍, 额外获得%d积分]", multiplier, bonusPoints);
+                log.info("应用VIP积分加成: userId={}, VIP倍率={}, 原始积分={}, 最终积分={}, 额外积分={}", 
+                        userId, multiplier, originalPoints, finalPoints, bonusPoints);
+            } else {
+                log.info("用户非VIP或倍率为1: userId={}, multiplier={}", userId, multiplier);
+            }
+        } catch (Exception e) {
+            log.error("获取VIP积分倍率失败，使用原始积分: userId={}", userId, e);
+            finalPoints = originalPoints;
+        }
+        // ========== VIP积分加成结束 ==========
+        
+        Integer newPoints = currentPoints + finalPoints;
         log.info("积分更新: userId={}, 原积分={}, 新积分={}", userId, currentPoints, newPoints);
         
         user.setPoints(newPoints);
@@ -144,16 +177,22 @@ public class UserPointsServiceImpl implements UserPointsService {
         // 根据原因确定来源
         Integer source = determineSource(reason);
         
-        // 记录积分变动
+        // 记录积分变动（记录最终积分）
+        String description = reason != null ? reason : "积分增加";
+        if (!bonusInfo.isEmpty()) {
+            description += bonusInfo;
+        }
+        
         UserPointsRecord record = UserPointsRecord.builder()
                 .userId(userId)
-                .points(points)
+                .points(finalPoints) // 记录最终积分（含加成）
                 .type(1) // 1-增加
                 .source(source) // 积分来源
-                .description(reason != null ? reason : "积分增加")
+                .description(description)
                 .build();
         userPointsRecordMapper.insert(record);
-        log.info("增加积分完成: userId={}, 新积分={}, recordId={}", userId, newPoints, record.getId());
+        log.info("增加积分完成: userId={}, 新积分={}, 最终积分={}, recordId={}", 
+                userId, newPoints, finalPoints, record.getId());
     }
 
     /**
@@ -389,5 +428,49 @@ public class UserPointsServiceImpl implements UserPointsService {
         String description = String.format("完成预约(预约ID:%d)", reservationId);
         addPoints(userId, points, description);
         log.info("用户{}完成预约{}奖励成功: +{}积分", userId, reservationId, points);
+    }
+    
+    /**
+     * 退款时扣除预约奖励的积分
+     */
+    @Override
+    @Transactional
+    public void deductForRefund(Long userId, Long reservationId) {
+        log.info("退款扣除积分检查: userId={}, reservationId={}", userId, reservationId);
+        
+        // 查找该预约的积分奖励记录
+        LambdaQueryWrapper<UserPointsRecord> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(UserPointsRecord::getUserId, userId)
+               .eq(UserPointsRecord::getSource, 2) // source=2表示预约来源
+               .eq(UserPointsRecord::getType, 1) // type=1表示增加
+               .like(UserPointsRecord::getDescription, "完成预约")
+               .like(UserPointsRecord::getDescription, "预约ID:" + reservationId);
+        
+        List<UserPointsRecord> records = userPointsRecordMapper.selectList(wrapper);
+        
+        if (records.isEmpty()) {
+            log.warn("未找到预约{}的积分奖励记录，可能未奖励或已扣除", reservationId);
+            return;
+        }
+        
+        // 检查是否已经扣除过
+        LambdaQueryWrapper<UserPointsRecord> deductWrapper = new LambdaQueryWrapper<>();
+        deductWrapper.eq(UserPointsRecord::getUserId, userId)
+                     .eq(UserPointsRecord::getType, 2) // type=2表示扣除
+                     .like(UserPointsRecord::getDescription, "退款扣除")
+                     .like(UserPointsRecord::getDescription, "预约ID:" + reservationId);
+        
+        List<UserPointsRecord> deductRecords = userPointsRecordMapper.selectList(deductWrapper);
+        
+        if (!deductRecords.isEmpty()) {
+            log.warn("预约{}的积分已扣除过，跳过", reservationId);
+            return;
+        }
+        
+        // 扣除积分
+        int points = 100; // 扣除之前奖励的积分
+        String description = String.format("退款扣除(预约ID:%d)", reservationId);
+        deductPoints(userId, points, description);
+        log.info("用户{}预约{}退款，扣除{}积分", userId, reservationId, points);
     }
 }

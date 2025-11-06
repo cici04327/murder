@@ -60,7 +60,7 @@
               </div>
               <div class="actions">
                 <el-button
-                  v-if="item.status === 0"
+                  v-if="item.payStatus === 0"
                   type="primary"
                   size="small"
                   @click="handlePay(item)"
@@ -68,15 +68,47 @@
                   立即支付
                 </el-button>
                 <el-button
-                  v-if="item.status === 3"
+                  v-if="item.payStatus === 1 && item.status < 3 && (!item.refundStatus || item.refundStatus === 0 || item.refundStatus === 3)"
+                  type="warning"
+                  size="small"
+                  @click="handleRefund(item)"
+                >
+                  申请退款
+                </el-button>
+                <el-tag
+                  v-if="item.refundStatus === 1"
+                  type="warning"
+                  size="small"
+                  effect="plain"
+                >
+                  退款审核中
+                </el-tag>
+                <el-tag
+                  v-if="item.refundStatus === 2"
+                  type="success"
+                  size="small"
+                  effect="plain"
+                >
+                  已退款
+                </el-tag>
+                <el-button
+                  v-if="item.status === 3 && item.hasReviewed === 0"
                   type="primary"
                   size="small"
                   @click="handleReview(item)"
                 >
                   评价
                 </el-button>
+                <el-tag
+                  v-if="item.status === 3 && item.hasReviewed === 1"
+                  type="success"
+                  size="small"
+                  effect="plain"
+                >
+                  已评价
+                </el-tag>
                 <el-button
-                  v-if="item.status < 2"
+                  v-if="item.payStatus === 0 && item.status < 2"
                   size="small"
                   @click="handleCancel(item)"
                 >
@@ -271,9 +303,15 @@ const confirmCancel = async () => {
 }
 
 const handleReview = (item) => {
+  // 检查是否已经评价过
+  // TODO: 调用API检查是否已评价
+  router.push(`/reservation/review/${item.id}`)
+}
+
+const handleRefund = (item) => {
   router.push({
-    path: `/script/${item.scriptId}`,
-    query: { review: true }
+    path: '/reservation/refund',
+    query: { id: item.id }
   })
 }
 

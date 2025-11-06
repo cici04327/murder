@@ -1,7 +1,37 @@
 <template>
-  <div class="info-page">
+  <div class="info-page about-page">
     <!-- 面包屑导航 -->
     <InfoPageBreadcrumb />
+    
+    <!-- 头部横幅 -->
+    <div class="hero-banner">
+      <div class="hero-content">
+        <h1 class="hero-title animate-fade-in-up">
+          <span class="gradient-text">探索剧本杀的无限可能</span>
+        </h1>
+        <p class="hero-subtitle animate-fade-in-up delay-1">
+          我们致力于为每一位玩家创造难忘的沉浸式体验
+        </p>
+        <div class="hero-stats animate-fade-in-up delay-2">
+          <div class="stat-item">
+            <div class="stat-number">500+</div>
+            <div class="stat-label">精选剧本</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-number">100+</div>
+            <div class="stat-label">合作门店</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-number">10W+</div>
+            <div class="stat-label">注册用户</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-number">98%</div>
+            <div class="stat-label">好评率</div>
+          </div>
+        </div>
+      </div>
+    </div>
     
     <el-card class="info-card animate-fade-in">
       <template #header>
@@ -138,11 +168,12 @@ import { useTheme } from '@/composables/useTheme'
 useScrollReveal()
 
 // 初始化主题
-const { initTheme } = useTheme()
-initTheme()
+const { loadTheme } = useTheme()
+loadTheme()
 </script>
 
 <style scoped>
+@import '@/styles/info-enhanced.css';
 @import '@/styles/info-theme.css';
 
 .info-page {

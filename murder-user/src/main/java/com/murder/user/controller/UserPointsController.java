@@ -208,4 +208,40 @@ public class UserPointsController {
             return Result.error(e.getMessage());
         }
     }
+    
+    /**
+     * 预约支付成功奖励积分
+     */
+    @PostMapping("/reward/reservation")
+    @Operation(summary = "预约支付成功奖励积分")
+    public Result<String> rewardForPayment(
+            @RequestParam Long userId, 
+            @RequestParam Long reservationId) {
+        log.info("预约支付成功奖励积分: userId={}, reservationId={}", userId, reservationId);
+        try {
+            userPointsService.rewardForReservation(userId, reservationId);
+            return Result.success("支付成功，获得100积分奖励");
+        } catch (Exception e) {
+            log.error("预约支付奖励失败: {}", e.getMessage());
+            return Result.error(e.getMessage());
+        }
+    }
+    
+    /**
+     * 退款扣除积分
+     */
+    @PostMapping("/deduct/refund")
+    @Operation(summary = "退款扣除积分")
+    public Result<String> deductForRefund(
+            @RequestParam Long userId, 
+            @RequestParam Long reservationId) {
+        log.info("退款扣除积分: userId={}, reservationId={}", userId, reservationId);
+        try {
+            userPointsService.deductForRefund(userId, reservationId);
+            return Result.success("退款成功，已扣除100积分");
+        } catch (Exception e) {
+            log.error("退款扣除积分失败: {}", e.getMessage());
+            return Result.error(e.getMessage());
+        }
+    }
 }

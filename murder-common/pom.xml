@@ -88,5 +88,17 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-cache</artifactId>
         </dependency>
+        
+        <!-- OpenFeign (用于Feign客户端接口定义) -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-openfeign</artifactId>
+        </dependency>
+        
+        <!-- POJO模块 (用于Feign接口中的DTO/VO定义) -->
+        <dependency>
+            <groupId>com.murder</groupId>
+            <artifactId>murder-pojo</artifactId>
+        </dependency>
     </dependencies>
 </project>

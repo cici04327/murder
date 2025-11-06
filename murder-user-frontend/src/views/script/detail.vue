@@ -21,7 +21,7 @@
           
           <div class="script-rating">
             <el-rate v-model="script.rating" disabled show-score />
-            <span class="review-count">({{ script.reviewCount || 0 }}条评价)</span>
+            <span class="review-count">({{ actualReviewCount }}条评价)</span>
           </div>
           
           <div class="script-price">
@@ -91,7 +91,7 @@
     <el-card class="detail-card">
       <template #header>
         <div class="card-header">
-          <span>用户评价 ({{ reviews.length }})</span>
+          <span>用户评价 ({{ actualReviewCount }}条)</span>
           <el-button type="primary" size="small" @click="showReviewDialog = true">
             写评价
           </el-button>
@@ -99,6 +99,19 @@
       </template>
       
       <div class="reviews-list">
+        <!-- 显示提示：当前显示最新的评价 -->
+        <div v-if="reviews.length > 0 && script && actualReviewCount > reviews.length" class="review-tip">
+          <el-alert 
+            type="info" 
+            :closable="false"
+            :show-icon="true"
+          >
+            <template #default>
+              当前显示最新的 {{ reviews.length }} 条评价，共 {{ actualReviewCount }} 条评价
+            </template>
+          </el-alert>
+        </div>
+        
         <div class="review-item" v-for="review in reviews" :key="review.id">
           <div class="review-header">
             <el-avatar :src="review.userAvatar" :size="40" />
@@ -139,7 +152,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getScriptDetail, getScriptRoles, getScriptReviews, addScriptReview, getScriptCategories, favoriteScript, unfavoriteScript, checkScriptFavoriteStatus } from '@/api/script'
 import { checkFavoriteTask } from '@/api/user'
@@ -162,6 +175,16 @@ const isFavorited = ref(false)
 const reviewForm = reactive({
   rating: 5,
   content: ''
+})
+
+// 计算实际评价数量（如果后端返回的 reviewCount 不准确，使用实际加载的评价数量）
+const actualReviewCount = computed(() => {
+  // 如果后端的 reviewCount 大于 0，使用后端的值
+  if (script.value?.reviewCount && script.value.reviewCount > 0) {
+    return script.value.reviewCount
+  }
+  // 否则使用实际加载的评价数量
+  return reviews.value.length
 })
 
 // 难度映射
@@ -377,7 +400,11 @@ const handleSubmitReview = async () => {
     showReviewDialog.value = false
     reviewForm.rating = 5
     reviewForm.content = ''
-    loadReviews()
+    // 重新加载剧本信息和评价列表，更新评价数量
+    await Promise.all([
+      loadScriptDetail(),
+      loadReviews()
+    ])
   } catch (error) {
     console.error('提交评价失败:', error)
   }
@@ -539,6 +566,14 @@ onMounted(async () => {
 .reviews-list {
   max-height: 600px;
   overflow-y: auto;
+}
+
+.review-tip {
+  margin-bottom: 20px;
+}
+
+.review-tip :deep(.el-alert) {
+  border-radius: 8px;
 }
 
 .review-item {

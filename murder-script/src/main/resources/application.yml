@@ -1,83 +1,19 @@
-server:
-  port: 8084
-
-# 文件上传配置
-file:
-  upload:
-    path: ./upload  # 文件上传路径
-    base-url: http://localhost:8081  # 文件访问基础URL（通过网关访问）
+# ============================================
+# Murder Script Service - 本地配置
+# 说明: 大部分配置已迁移到 Nacos 配置中心
+#      本文件仅保留兜底配置和本地开发配置
+# ============================================
 
 spring:
   application:
     name: murder-script
-  servlet:
-    multipart:
-      enabled: true
-      max-file-size: 5MB  # 单个文件最大大小
-      max-request-size: 50MB  # 请求最大大小
-  redis:
-    host: localhost
-    port: 6379
-    database: 3
-    timeout: 3000ms
-    lettuce:
-      pool:
-        max-active: 8
-        max-idle: 8
-        min-idle: 0
-        max-wait: -1ms
   cloud:
     compatibility-verifier:
       enabled: false
     nacos:
-      discovery:
-        enabled: true
-        server-addr: localhost:8848
       config:
-        enabled: false
-        server-addr: localhost:8848
-        file-extension: yml
         import-check:
           enabled: false
-  datasource:
-    type: com.alibaba.druid.pool.DruidDataSource
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/murder?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
-    username: root
-    password: root
 
-mybatis-plus:
-  mapper-locations: classpath:mapper/**/*.xml
-  type-aliases-package: com.murder.pojo.entity
-  configuration:
-    map-underscore-to-camel-case: true
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
-  global-config:
-    db-config:
-      id-type: auto
-      logic-delete-field: isDeleted
-      logic-delete-value: 1
-      logic-not-delete-value: 0
-    banner: false
-  # 分页配置
-  interceptor:
-    pagination:
-      enabled: true
-      db-type: mysql
-      overflow: false
-      max-limit: 1000
-
-# JWT配置
-murder:
-  jwt:
-    user-secret-key: murder-user-secret-key-2024-secure-key-for-jwt
-    user-ttl: 7200000
-    user-token-name: token
-    admin-secret-key: murder-admin-secret-key-2024-secure-key-for-jwt
-    admin-ttl: 7200000
-    admin-token-name: admin-token
-
-knife4j:
-  enable: true
-  setting:
-    language: zh_cn
+# 本地开发环境兜底配置（当 Nacos 不可用时使用）
+# 生产环境请优先使用 Nacos 配置中心的配置

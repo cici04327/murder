@@ -103,7 +103,7 @@ public class Reservation implements Serializable {
     private Integer status;
     
     /**
-     * 支付状态：0未支付，1已支付，2已退款
+     * 支付状态：0未支付，1已支付，2退款中，3已退款
      */
     private Integer payStatus;
     
@@ -111,6 +111,31 @@ public class Reservation implements Serializable {
      * 支付时间
      */
     private LocalDateTime payTime;
+    
+    /**
+     * 退款原因
+     */
+    private String refundReason;
+    
+    /**
+     * 退款申请时间
+     */
+    private LocalDateTime refundApplyTime;
+    
+    /**
+     * 退款处理时间
+     */
+    private LocalDateTime refundProcessTime;
+    
+    /**
+     * 退款状态：0无退款，1退款中，2退款成功，3退款失败
+     */
+    private Integer refundStatus;
+    
+    /**
+     * 管理员备注
+     */
+    private String adminRemark;
     
     /**
      * 逻辑删除：1删除，0未删除

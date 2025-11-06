@@ -57,6 +57,16 @@ public class User implements Serializable {
     private Integer memberLevel;
     
     /**
+     * VIP等级：0非会员，1普通，2银卡，3金卡，4钻石
+     */
+    private Integer vipLevel;
+    
+    /**
+     * VIP到期时间
+     */
+    private LocalDateTime vipExpireTime;
+    
+    /**
      * 邮箱
      */
     @TableField(exist = false)

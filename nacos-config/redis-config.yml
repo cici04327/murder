@@ -1,0 +1,18 @@
+# ============================================
+# Nacos 配置中心 - Redis 配置
+# Data ID: redis-config.yml
+# Group: DEFAULT_GROUP
+# ============================================
+
+spring:
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      connect-timeout: 3000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: -1ms

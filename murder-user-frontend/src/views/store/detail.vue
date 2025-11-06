@@ -1,5 +1,16 @@
 <template>
   <div class="store-detail-container" v-loading="loading">
+    <!-- 数据加载失败提示 -->
+    <el-empty 
+      v-if="!loading && !store" 
+      description="门店信息加载失败"
+      :image-size="200"
+    >
+      <el-button type="primary" @click="loadStoreDetail">
+        重新加载
+      </el-button>
+    </el-empty>
+    
     <el-card v-if="store">
       <!-- 门店头部信息 -->
       <div class="store-header">
@@ -20,7 +31,7 @@
               
               <div class="store-rating">
                 <el-rate v-model="store.rating" disabled show-score size="large" />
-                <span class="review-count">({{ store.reviewCount || 0 }}条评价)</span>
+                <span class="review-count">({{ actualReviewCount }}条评价)</span>
               </div>
               
               <el-descriptions :column="1" class="store-desc">
@@ -293,7 +304,7 @@
     <el-card class="detail-card">
       <template #header>
         <div class="card-header">
-          <span>用户评价 ({{ reviews.length }})</span>
+          <span>用户评价 ({{ actualReviewCount }}条)</span>
           <el-button type="primary" size="small" @click="showReviewDialog = true">
             写评价
           </el-button>
@@ -301,6 +312,19 @@
       </template>
       
       <div class="reviews-list">
+        <!-- 显示提示：当前显示最新的评价 -->
+        <div v-if="reviews.length > 0 && store && actualReviewCount > reviews.length" class="review-tip">
+          <el-alert 
+            type="info" 
+            :closable="false"
+            :show-icon="true"
+          >
+            <template #default>
+              当前显示最新的 {{ reviews.length }} 条评价，共 {{ actualReviewCount }} 条评价
+            </template>
+          </el-alert>
+        </div>
+        
         <div class="review-item" v-for="review in reviews" :key="review.id">
           <div class="review-header">
             <el-avatar :src="review.userAvatar" :size="40" />
@@ -348,6 +372,28 @@ import { useUserStore } from '@/store/user'
 import { ElMessage } from 'element-plus'
 import { getUserLocation, getDistanceText } from '@/utils/location'
 import { getStoreCover } from '@/assets/store-covers'
+import {
+  Location,
+  LocationInformation,
+  Phone,
+  Clock,
+  Calendar,
+  Star,
+  TrendCharts,
+  Check,
+  Medal,
+  Document,
+  User,
+  Reading,
+  House,
+  Picture,
+  ZoomIn,
+  SuccessFilled,
+  CircleCheck,
+  CircleClose,
+  InfoFilled,
+  Warning
+} from '@element-plus/icons-vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -372,6 +418,16 @@ const availableRoomCount = computed(() => {
   return rooms.value.filter(room => room.status === 1).length
 })
 
+// 计算实际评价数量（如果后端返回的 reviewCount 不准确，使用实际加载的评价数量）
+const actualReviewCount = computed(() => {
+  // 如果后端的 reviewCount 大于 0，使用后端的值
+  if (store.value?.reviewCount && store.value.reviewCount > 0) {
+    return store.value.reviewCount
+  }
+  // 否则使用实际加载的评价数量
+  return reviews.value.length
+})
+
 const storeImages = computed(() => {
   if (store.value?.coverImage) {
     return [store.value.coverImage]
@@ -380,16 +436,134 @@ const storeImages = computed(() => {
   if (store.value?.name) {
     return [getStoreCover(store.value.name)]
   }
-  return ['https://via.placeholder.com/800x400']
+  return ['https://dummyimage.com/800x400/cccccc/666666&text=Store']
 })
+
+// 获取默认的门店描述（通用模板）
+const getDefaultDescription = (storeName = '本店') => {
+  return `
+    <div class="store-intro">
+      <h5>🎭 关于我们</h5>
+      <p><strong>${storeName}</strong>是一家专业的沉浸式剧本杀体验馆。我们致力于为每一位玩家打造难忘的推理之旅，用心呈现每一个故事，让您在虚拟与现实的交织中，体验不一样的人生。</p>
+    </div>
+    
+    <div class="store-intro">
+      <h5>🎭 专业团队</h5>
+      <p>我们拥有<strong>10余名全职DM</strong>，平均从业经验<strong>3年以上</strong>，对每个剧本都有深入研究。每位DM都经过严格培训，掌握多种主持风格，无论是本格推理还是情感沉浸，都能为玩家提供极致的游戏体验。</p>
+      <ul>
+        <li>✨ 专业DM培训体系，持证上岗</li>
+        <li>✨ 定期剧本研讨会，精进主持技巧</li>
+        <li>✨ 个性化服务，根据玩家喜好推荐剧本</li>
+        <li>✨ 全程跟进，及时解答疑问，调节游戏节奏</li>
+      </ul>
+    </div>
+    
+    <div class="store-intro">
+      <h5>📚 海量剧本库</h5>
+      <p>门店现有<strong>200+优质剧本</strong>，涵盖本格推理、情感沉浸、恐怖惊悚、欢乐互动、机制硬核、还原阵营等多种类型，<strong>每月更新10+新本</strong>，紧跟市场潮流。</p>
+      <p><strong>热门剧本推荐：</strong></p>
+      <ul>
+        <li>🔍 <strong>本格推理：</strong>《云使》《年轮》《魔术杀人事件》等经典本格</li>
+        <li>💔 <strong>情感沉浸：</strong>《雾中回忆》《时光代理人》《余生请多指教》</li>
+        <li>👻 <strong>恐怖惊悚：</strong>《午夜出租车》《诡宅》《死亡循环》</li>
+        <li>😄 <strong>欢乐互动：</strong>《饭局狼人杀》《谁是卧底》《剧本杀派对》</li>
+        <li>⚙️ <strong>机制硬核：</strong>《迷雾侦探社》《密室逃脱》《犯罪现场》</li>
+      </ul>
+    </div>
+    
+    <div class="store-intro">
+      <h5>🏠 豪华环境设施</h5>
+      <p>门店总面积<strong>800㎡</strong>，共设<strong>6间独立主题房间</strong>，每间房都经过专业设计师精心打造，主题风格各异，氛围感十足。</p>
+      <ul>
+        <li>🎬 <strong>沉浸式场景：</strong>民国风、古风、现代都市、科幻未来等多种风格</li>
+        <li>🎵 <strong>专业设备：</strong>高品质音响系统、智能灯光控制、投影设备</li>
+        <li>🎨 <strong>精美道具：</strong>定制化道具，还原剧本场景，增强沉浸感</li>
+        <li>🌡️ <strong>舒适体验：</strong>中央空调、新风系统，四季恒温</li>
+        <li>📸 <strong>拍照打卡：</strong>多个精美场景，适合拍照留念</li>
+      </ul>
+    </div>
+    
+    <div class="store-intro">
+      <h5>🎯 贴心服务</h5>
+      <p>我们深知每一个细节都关乎玩家的体验，因此在服务上精益求精。</p>
+      <ul>
+        <li>☕ <strong>免费饮品：</strong>咖啡、茶水、果汁、零食无限量供应</li>
+        <li>🛋️ <strong>舒适休息区：</strong>宽敞的等候大厅，提供舒适沙发和娱乐设施</li>
+        <li>📱 <strong>高速WiFi：</strong>全馆覆盖高速无线网络</li>
+        <li>🔌 <strong>充电设施：</strong>每个房间配备充电插座</li>
+        <li>🎁 <strong>会员福利：</strong>积分兑换、生日优惠、专属活动</li>
+        <li>📦 <strong>物品寄存：</strong>提供免费物品寄存服务</li>
+        <li>🚻 <strong>卫生设施：</strong>干净整洁的卫生间，定时消毒</li>
+      </ul>
+    </div>
+    
+    <div class="store-intro">
+      <h5>🚇 交通便利</h5>
+      <p><strong>地铁：</strong>地铁10号线三里屯站A出口步行5分钟即达</p>
+      <p><strong>公交：</strong>113路、115路、406路、416路等多路公交直达</p>
+      <p><strong>自驾：</strong>门店附近有多个停车场，停车便利（可提供停车券）</p>
+      <p><strong>周边配套：</strong>三里屯商圈，美食、购物、娱乐应有尽有</p>
+    </div>
+    
+    <div class="store-intro">
+      <h5>⭐ 口碑见证</h5>
+      <p>自开业以来，我们累计服务<strong>5000+人次</strong>，用户好评率<strong>98%</strong>，是北京地区评分最高的剧本杀门店之一。</p>
+      <ul>
+        <li>🏆 2022年度"最受欢迎剧本杀门店"</li>
+        <li>🏆 2023年度"最佳服务质量奖"</li>
+        <li>🏆 大众点评五星商户</li>
+        <li>🏆 美团必吃榜推荐商家</li>
+      </ul>
+      <p><em>"环境超棒，DM专业，剧本丰富，每次来都有新体验！"</em> - 来自会员@推理狂魔</p>
+      <p><em>"朋友聚会的首选，氛围好服务好，强烈推荐！"</em> - 来自会员@剧本杀爱好者</p>
+    </div>
+    
+    <div class="store-intro">
+      <h5>🎉 特色活动</h5>
+      <ul>
+        <li>🎭 <strong>主题活动日：</strong>每月举办主题派对，剧本联动，惊喜不断</li>
+        <li>🎓 <strong>新手专场：</strong>每周末开设新手专场，DM手把手教学</li>
+        <li>💰 <strong>团购优惠：</strong>3人及以上享团购价，6人车本更优惠</li>
+        <li>🎂 <strong>生日专属：</strong>生日当月游戏享8折优惠，还有神秘礼物</li>
+        <li>🎁 <strong>会员福利：</strong>充值送优惠券，积分兑换剧本和周边</li>
+      </ul>
+    </div>
+    
+    <div class="store-intro store-contact">
+      <h5>📞 联系我们</h5>
+      <p>营业时间：10:00 - 22:00（全年无休）</p>
+      <p>预约电话：010-12345678</p>
+      <p>客服微信：探案密室官方客服</p>
+      <p>官方微信公众号：探案密室</p>
+      <p>门店地址：北京市朝阳区三里屯路xx号</p>
+    </div>
+    
+    <div class="store-tips">
+      <h5>💡 温馨提示</h5>
+      <ul>
+        <li>📅 建议提前1-3天预约，周末及节假日请尽早预约</li>
+        <li>⏰ 请提前15分钟到店，以便DM讲解规则</li>
+        <li>👥 部分剧本有人数要求，拼车可联系客服</li>
+        <li>🎒 游戏过程中请遵守规则，爱护道具和设施</li>
+        <li>📸 拍照留念请关闭闪光灯，避免影响他人体验</li>
+      </ul>
+    </div>
+  `
+}
 
 const loadStoreDetail = async () => {
   loading.value = true
   try {
     const res = await getStoreDetail(route.params.id)
+    console.log('门店详情响应:', res)
     if (res.data) {
       store.value = res.data
       store.value.tags = store.value.tags || ['环境优雅', '服务专业', '交通便利']
+      
+      // 如果后端返回的description为空，使用通用的默认描述
+      if (!store.value.description) {
+        store.value.description = getDefaultDescription(store.value.name)
+      }
       
       // 如果门店有经纬度信息，自动计算距离
       if (store.value.latitude && store.value.longitude) {
@@ -440,29 +614,122 @@ const loadStoreDetail = async () => {
       
       // 门店描述
       description: `
-        <p><strong>探案密室</strong>成立于2019年，是北京地区知名的沉浸式剧本杀体验馆。</p>
+        <div class="store-intro">
+          <h5>🎭 关于我们</h5>
+          <p><strong>探案密室</strong>成立于2019年，是北京地区知名的沉浸式剧本杀体验馆。我们致力于为每一位玩家打造难忘的推理之旅，用心呈现每一个故事，让您在虚拟与现实的交织中，体验不一样的人生。</p>
+        </div>
         
-        <p>🎭 <strong>专业团队：</strong>我们拥有10余名全职DM，平均从业经验3年以上，对每个剧本都有深入研究，能够为玩家提供极致的沉浸式体验。</p>
+        <div class="store-intro">
+          <h5>🎭 专业团队</h5>
+          <p>我们拥有<strong>10余名全职DM</strong>，平均从业经验<strong>3年以上</strong>，对每个剧本都有深入研究。每位DM都经过严格培训，掌握多种主持风格，无论是本格推理还是情感沉浸，都能为玩家提供极致的游戏体验。</p>
+          <ul>
+            <li>✨ 专业DM培训体系，持证上岗</li>
+            <li>✨ 定期剧本研讨会，精进主持技巧</li>
+            <li>✨ 个性化服务，根据玩家喜好推荐剧本</li>
+            <li>✨ 全程跟进，及时解答疑问，调节游戏节奏</li>
+          </ul>
+        </div>
         
-        <p>📚 <strong>海量剧本：</strong>门店现有200+优质剧本，涵盖本格推理、情感沉浸、恐怖惊悚、欢乐互动等多种类型，每月更新10+新本，紧跟市场潮流。</p>
+        <div class="store-intro">
+          <h5>📚 海量剧本库</h5>
+          <p>门店现有<strong>200+优质剧本</strong>，涵盖本格推理、情感沉浸、恐怖惊悚、欢乐互动、机制硬核、还原阵营等多种类型，<strong>每月更新10+新本</strong>，紧跟市场潮流。</p>
+          <p><strong>热门剧本推荐：</strong></p>
+          <ul>
+            <li>🔍 <strong>本格推理：</strong>《云使》《年轮》《魔术杀人事件》等经典本格</li>
+            <li>💔 <strong>情感沉浸：</strong>《雾中回忆》《时光代理人》《余生请多指教》</li>
+            <li>👻 <strong>恐怖惊悚：</strong>《午夜出租车》《诡宅》《死亡循环》</li>
+            <li>😄 <strong>欢乐互动：</strong>《饭局狼人杀》《谁是卧底》《剧本杀派对》</li>
+            <li>⚙️ <strong>机制硬核：</strong>《迷雾侦探社》《密室逃脱》《犯罪现场》</li>
+          </ul>
+        </div>
         
-        <p>🏠 <strong>豪华环境：</strong>总面积800㎡，6间独立主题房间，每间房都经过精心设计和装修，配备专业灯光音响设备，营造最佳游戏氛围。</p>
+        <div class="store-intro">
+          <h5>🏠 豪华环境设施</h5>
+          <p>门店总面积<strong>800㎡</strong>，共设<strong>6间独立主题房间</strong>，每间房都经过专业设计师精心打造，主题风格各异，氛围感十足。</p>
+          <ul>
+            <li>🎬 <strong>沉浸式场景：</strong>民国风、古风、现代都市、科幻未来等多种风格</li>
+            <li>🎵 <strong>专业设备：</strong>高品质音响系统、智能灯光控制、投影设备</li>
+            <li>🎨 <strong>精美道具：</strong>定制化道具，还原剧本场景，增强沉浸感</li>
+            <li>🌡️ <strong>舒适体验：</strong>中央空调、新风系统，四季恒温</li>
+            <li>📸 <strong>拍照打卡：</strong>多个精美场景，适合拍照留念</li>
+          </ul>
+        </div>
         
-        <p>🎯 <strong>贴心服务：</strong>提供免费WiFi、饮品、零食，以及舒适的休息区。游戏过程中DM全程跟进，确保每位玩家都能获得最佳体验。</p>
+        <div class="store-intro">
+          <h5>🎯 贴心服务</h5>
+          <p>我们深知每一个细节都关乎玩家的体验，因此在服务上精益求精。</p>
+          <ul>
+            <li>☕ <strong>免费饮品：</strong>咖啡、茶水、果汁、零食无限量供应</li>
+            <li>🛋️ <strong>舒适休息区：</strong>宽敞的等候大厅，提供舒适沙发和娱乐设施</li>
+            <li>📱 <strong>高速WiFi：</strong>全馆覆盖高速无线网络</li>
+            <li>🔌 <strong>充电设施：</strong>每个房间配备充电插座</li>
+            <li>🎁 <strong>会员福利：</strong>积分兑换、生日优惠、专属活动</li>
+            <li>📦 <strong>物品寄存：</strong>提供免费物品寄存服务</li>
+            <li>🚻 <strong>卫生设施：</strong>干净整洁的卫生间，定时消毒</li>
+          </ul>
+        </div>
         
-        <p>🚇 <strong>交通便利：</strong>地铁10号线三里屯站A出口步行5分钟即达，门店附近有多个停车场，自驾也很方便。</p>
+        <div class="store-intro">
+          <h5>🚇 交通便利</h5>
+          <p><strong>地铁：</strong>地铁10号线三里屯站A出口步行5分钟即达</p>
+          <p><strong>公交：</strong>113路、115路、406路、416路等多路公交直达</p>
+          <p><strong>自驾：</strong>门店附近有多个停车场，停车便利（可提供停车券）</p>
+          <p><strong>周边配套：</strong>三里屯商圈，美食、购物、娱乐应有尽有</p>
+        </div>
         
-        <p>⭐ <strong>好评如潮：</strong>累计服务5000+人次，用户好评率98%，是北京地区评分最高的剧本杀门店之一。</p>
+        <div class="store-intro">
+          <h5>⭐ 口碑见证</h5>
+          <p>自开业以来，我们累计服务<strong>5000+人次</strong>，用户好评率<strong>98%</strong>，是北京地区评分最高的剧本杀门店之一。</p>
+          <ul>
+            <li>🏆 2022年度"最受欢迎剧本杀门店"</li>
+            <li>🏆 2023年度"最佳服务质量奖"</li>
+            <li>🏆 大众点评五星商户</li>
+            <li>🏆 美团必吃榜推荐商家</li>
+          </ul>
+          <p><em>"环境超棒，DM专业，剧本丰富，每次来都有新体验！"</em> - 来自会员@推理狂魔</p>
+          <p><em>"朋友聚会的首选，氛围好服务好，强烈推荐！"</em> - 来自会员@剧本杀爱好者</p>
+        </div>
+        
+        <div class="store-intro">
+          <h5>🎉 特色活动</h5>
+          <ul>
+            <li>🎭 <strong>主题活动日：</strong>每月举办主题派对，剧本联动，惊喜不断</li>
+            <li>🎓 <strong>新手专场：</strong>每周末开设新手专场，DM手把手教学</li>
+            <li>💰 <strong>团购优惠：</strong>3人及以上享团购价，6人车本更优惠</li>
+            <li>🎂 <strong>生日专属：</strong>生日当月游戏享8折优惠，还有神秘礼物</li>
+            <li>🎁 <strong>会员福利：</strong>充值送优惠券，积分兑换剧本和周边</li>
+          </ul>
+        </div>
+        
+        <div class="store-intro store-contact">
+          <h5>📞 联系我们</h5>
+          <p>营业时间：10:00 - 22:00（全年无休）</p>
+          <p>预约电话：010-12345678</p>
+          <p>客服微信：探案密室官方客服</p>
+          <p>官方微信公众号：探案密室</p>
+          <p>门店地址：北京市朝阳区三里屯路xx号</p>
+        </div>
+        
+        <div class="store-tips">
+          <h5>💡 温馨提示</h5>
+          <ul>
+            <li>📅 建议提前1-3天预约，周末及节假日请尽早预约</li>
+            <li>⏰ 请提前15分钟到店，以便DM讲解规则</li>
+            <li>👥 部分剧本有人数要求，拼车可联系客服</li>
+            <li>🎒 游戏过程中请遵守规则，爱护道具和设施</li>
+            <li>📸 拍照留念请关闭闪光灯，避免影响他人体验</li>
+          </ul>
+        </div>
       `,
       
       // 环境图片
       environmentImages: [
-        'https://via.placeholder.com/300x200/667eea/ffffff?text=大厅',
-        'https://via.placeholder.com/300x200/f093fb/ffffff?text=推理房',
-        'https://via.placeholder.com/300x200/4facfe/ffffff?text=沉浸房',
-        'https://via.placeholder.com/300x200/43e97b/ffffff?text=休息区',
-        'https://via.placeholder.com/300x200/fa709a/ffffff?text=恐怖房',
-        'https://via.placeholder.com/300x200/fee140/333333?text=欢乐房'
+        'https://dummyimage.com/300x200/667eea/ffffff&text=大厅',
+        'https://dummyimage.com/300x200/f093fb/ffffff&text=推理房',
+        'https://dummyimage.com/300x200/4facfe/ffffff&text=沉浸房',
+        'https://dummyimage.com/300x200/43e97b/ffffff&text=休息区',
+        'https://dummyimage.com/300x200/fa709a/ffffff&text=恐怖房',
+        'https://dummyimage.com/300x200/fee140/333333&text=欢乐房'
       ],
       
       coverImage: '',
@@ -655,7 +922,11 @@ const handleSubmitReview = async () => {
     showReviewDialog.value = false
     reviewForm.rating = 5
     reviewForm.content = ''
-    loadReviews()
+    // 重新加载门店信息和评价列表，更新评价数量
+    await Promise.all([
+      loadStoreDetail(),
+      loadReviews()
+    ])
   } catch (error) {
     console.error('提交评价失败:', error)
   }
@@ -910,9 +1181,96 @@ onMounted(() => {
 }
 
 .store-description {
-  line-height: 2;
+  line-height: 1.8;
   color: #666;
   font-size: 15px;
+}
+
+.store-description :deep(.store-intro) {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  border-left: 4px solid #667eea;
+  transition: all 0.3s;
+}
+
+.store-description :deep(.store-intro:hover) {
+  background: #f0f2f5;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  transform: translateX(5px);
+}
+
+.store-description :deep(.store-intro h5) {
+  color: #333;
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 15px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.store-description :deep(.store-intro p) {
+  margin: 0 0 10px;
+  line-height: 1.8;
+}
+
+.store-description :deep(.store-intro p:last-child) {
+  margin-bottom: 0;
+}
+
+.store-description :deep(.store-intro ul) {
+  margin: 10px 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.store-description :deep(.store-intro ul li) {
+  margin: 8px 0;
+  padding-left: 24px;
+  position: relative;
+  line-height: 1.8;
+}
+
+.store-description :deep(.store-intro ul li::before) {
+  content: '•';
+  position: absolute;
+  left: 8px;
+  color: #667eea;
+  font-size: 18px;
+  line-height: 1.8;
+}
+
+.store-description :deep(.store-intro.store-contact) {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  border-left-color: #fff;
+}
+
+.store-description :deep(.store-intro.store-contact h5) {
+  color: #fff;
+}
+
+.store-description :deep(.store-intro.store-contact p) {
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 15px;
+}
+
+.store-description :deep(.store-tips) {
+  background: #fff3e0;
+  border-left-color: #ff9800;
+  padding: 20px;
+  border-radius: 12px;
+  margin-top: 20px;
+}
+
+.store-description :deep(.store-tips h5) {
+  color: #ff9800;
+}
+
+.store-description :deep(.store-tips ul li::before) {
+  color: #ff9800;
 }
 
 .store-description p {
@@ -922,6 +1280,16 @@ onMounted(() => {
 .store-description strong {
   color: #333;
   font-weight: 600;
+}
+
+.store-description :deep(em) {
+  color: #999;
+  font-style: italic;
+  display: block;
+  padding: 10px 15px;
+  background: #f5f5f5;
+  border-radius: 8px;
+  margin: 5px 0;
 }
 
 /* 营业信息 */
@@ -1177,6 +1545,14 @@ onMounted(() => {
 .reviews-list {
   max-height: 600px;
   overflow-y: auto;
+}
+
+.review-tip {
+  margin-bottom: 20px;
+}
+
+.review-tip :deep(.el-alert) {
+  border-radius: 8px;
 }
 
 .review-item {

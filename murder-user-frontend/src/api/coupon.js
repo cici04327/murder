@@ -70,3 +70,12 @@ export const getAvailableCouponsForReservation = (reservationId) => {
     method: 'get'
   })
 }
+
+// 积分兑换优惠券
+export const exchangeCoupon = (couponId, points) => {
+  return request({
+    url: '/user/points/exchange-coupon',
+    method: 'post',
+    params: { couponId, points }
+  })
+}

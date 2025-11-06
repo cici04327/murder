@@ -125,12 +125,29 @@
           <span class="realtime-title">实时预约动态</span>
         </div>
         <div class="realtime-content scrolling">
-          <div v-for="(item, index) in realtime.recentReservations" :key="index" class="realtime-item">
-            <span class="item-user">{{ item.userNickname }}</span>
-            预约了
-            <span class="item-script">《{{ item.scriptName }}》</span>
-            -
-            <span class="item-store">{{ item.storeName }}</span>
+          <div v-if="realtime.recentReservations && realtime.recentReservations.length > 0" class="scroll-wrapper">
+            <div class="scroll-content">
+              <div v-for="(item, index) in realtime.recentReservations" :key="index" class="realtime-item">
+                <span class="item-user">{{ item.userNickname || '匿名用户' }}</span>
+                预约了
+                <span class="item-script">《{{ item.scriptName }}》</span>
+                -
+                <span class="item-store">{{ item.storeName }}</span>
+              </div>
+            </div>
+            <div class="scroll-content" aria-hidden="true">
+              <div v-for="(item, index) in realtime.recentReservations" :key="'copy-' + index" class="realtime-item">
+                <span class="item-user">{{ item.userNickname || '匿名用户' }}</span>
+                预约了
+                <span class="item-script">《{{ item.scriptName }}》</span>
+                -
+                <span class="item-store">{{ item.storeName }}</span>
+              </div>
+            </div>
+          </div>
+          <div v-else class="empty-state">
+            <div class="empty-icon">📭</div>
+            <div class="empty-text">暂无预约动态</div>
           </div>
         </div>
       </div>
@@ -141,10 +158,16 @@
           <span class="realtime-title">今日热门剧本</span>
         </div>
         <div class="realtime-content">
-          <div v-for="(item, index) in realtime.hotScripts" :key="index" class="realtime-item">
-            <span class="hot-rank">{{ index + 1 }}.</span>
-            <span class="hot-name">{{ item.name }}</span>
-            <span class="hot-count">{{ item.todayCount }}场</span>
+          <div v-if="realtime.hotScripts && realtime.hotScripts.length > 0">
+            <div v-for="(item, index) in realtime.hotScripts" :key="index" class="realtime-item">
+              <span class="hot-rank">{{ index + 1 }}.</span>
+              <span class="hot-name">{{ item.name }}</span>
+              <span class="hot-count">{{ item.todayCount }}场</span>
+            </div>
+          </div>
+          <div v-else class="empty-state">
+            <div class="empty-icon">🎭</div>
+            <div class="empty-text">今日暂无热门剧本</div>
           </div>
         </div>
       </div>
@@ -154,11 +177,17 @@
           <span class="realtime-icon">🎁</span>
           <span class="realtime-title">优惠券使用</span>
         </div>
-        <div class="realtime-content scrolling">
-          <div v-for="(item, index) in realtime.recentCouponUses" :key="index" class="realtime-item">
-            <span class="item-user">{{ item.userNickname }}</span>
-            使用了
-            <span class="item-coupon">{{ item.couponName }}</span>
+        <div class="realtime-content">
+          <div v-if="realtime.recentCouponUses && realtime.recentCouponUses.length > 0">
+            <div v-for="(item, index) in realtime.recentCouponUses" :key="index" class="realtime-item">
+              <span class="item-user">{{ item.userNickname || '匿名用户' }}</span>
+              使用了
+              <span class="item-coupon">{{ item.couponName }}</span>
+            </div>
+          </div>
+          <div v-else class="empty-state">
+            <div class="empty-icon">🎫</div>
+            <div class="empty-text">暂无优惠券使用记录</div>
           </div>
         </div>
       </div>
@@ -344,32 +373,48 @@ const initCharts = () => {
   // 用户增长趋势
   if (userGrowthChart.value) {
     const chart = echarts.init(userGrowthChart.value)
-    chart.setOption({
-      tooltip: { trigger: 'axis' },
-      grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
-      xAxis: {
-        type: 'category',
-        data: charts.userGrowthDates || [],
-        axisLine: { lineStyle: { color: '#666' } }
-      },
-      yAxis: {
-        type: 'value',
-        axisLine: { lineStyle: { color: '#666' } }
-      },
-      series: [{
-        data: charts.userGrowthCounts || [],
-        type: 'line',
-        smooth: true,
-        areaStyle: {
-          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: 'rgba(118, 75, 162, 0.6)' },
-            { offset: 1, color: 'rgba(118, 75, 162, 0.1)' }
-          ])
+    const hasData = charts.userGrowthDates && charts.userGrowthDates.length > 0
+    
+    if (hasData) {
+      chart.setOption({
+        tooltip: { trigger: 'axis' },
+        grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+        xAxis: {
+          type: 'category',
+          data: charts.userGrowthDates || [],
+          axisLine: { lineStyle: { color: '#666' } }
         },
-        lineStyle: { color: '#764ba2', width: 3 },
-        itemStyle: { color: '#764ba2' }
-      }]
-    })
+        yAxis: {
+          type: 'value',
+          axisLine: { lineStyle: { color: '#666' } }
+        },
+        series: [{
+          data: charts.userGrowthCounts || [],
+          type: 'line',
+          smooth: true,
+          areaStyle: {
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: 'rgba(118, 75, 162, 0.6)' },
+              { offset: 1, color: 'rgba(118, 75, 162, 0.1)' }
+            ])
+          },
+          lineStyle: { color: '#764ba2', width: 3 },
+          itemStyle: { color: '#764ba2' }
+        }]
+      })
+    } else {
+      // 显示空数据提示
+      chart.setOption({
+        title: {
+          text: '暂无数据',
+          subtext: '近期没有新用户注册',
+          left: 'center',
+          top: 'center',
+          textStyle: { color: '#999', fontSize: 16 },
+          subtextStyle: { color: '#999', fontSize: 12 }
+        }
+      })
+    }
   }
 
   // 会员等级分布
@@ -624,6 +669,9 @@ onUnmounted(() => {
   border-radius: 12px;
   padding: 20px;
   box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  height: 280px;
+  display: flex;
+  flex-direction: column;
 }
 
 .realtime-header {
@@ -646,12 +694,10 @@ onUnmounted(() => {
 }
 
 .realtime-content {
-  max-height: 200px;
+  flex: 1;
   overflow-y: auto;
-}
-
-.realtime-content.scrolling {
-  animation: scroll-up 20s linear infinite;
+  min-height: 0;
+  padding: 0 15px;
 }
 
 .realtime-item {
@@ -683,6 +729,54 @@ onUnmounted(() => {
   color: #667eea;
   font-weight: bold;
   float: right;
+}
+
+/* 空状态样式 */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 200px;
+  opacity: 0.6;
+}
+
+.empty-icon {
+  font-size: 48px;
+  margin-bottom: 10px;
+}
+
+.empty-text {
+  font-size: 14px;
+  color: #999;
+}
+
+/* 滚动动画 */
+.realtime-content.scrolling {
+  overflow: hidden !important;
+  position: relative;
+  padding: 0 !important;
+}
+
+.scroll-wrapper {
+  display: flex;
+  flex-direction: column;
+  animation: scroll-up 30s linear infinite;
+  will-change: transform;
+}
+
+.realtime-content.scrolling:hover .scroll-wrapper {
+  animation-play-state: paused;
+}
+
+.scroll-content {
+  flex-shrink: 0;
+  padding: 15px;
+}
+
+.scroll-content .realtime-item {
+  margin-bottom: 10px;
 }
 
 @keyframes scroll-up {

@@ -2,6 +2,7 @@ package com.murder.store.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.murder.common.context.BaseContext;
 import com.murder.common.result.PageResult;
 import com.murder.pojo.entity.Store;
 import com.murder.pojo.entity.StoreReview;
@@ -64,6 +65,11 @@ public class StoreReviewServiceImpl implements StoreReviewService {
 
     @Override
     public void add(StoreReview review) {
+        // 从ThreadLocal获取当前登录用户ID
+        Long currentUserId = BaseContext.getCurrentId();
+        if (currentUserId != null) {
+            review.setUserId(currentUserId);
+        }
         reviewMapper.insert(review);
     }
 

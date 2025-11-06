@@ -17,11 +17,20 @@ export default defineConfig({
       host: 'localhost',
       port: 3001,
       clientPort: 3001,
-      overlay: false  // 禁用错误遮罩层
+      overlay: false  // 禁用错误遮罩
     },
     proxy: {
       '/api': {
         target: 'http://localhost:8080',
+        changeOrigin: true
+      },
+      // 预约服务直连代理（用于退款等功能）
+      '/reservation': {
+        target: 'http://localhost:8085',
+        changeOrigin: true
+      },
+      '/payment': {
+        target: 'http://localhost:8085',
         changeOrigin: true
       }
     },
@@ -33,6 +42,7 @@ export default defineConfig({
         '**/public/sw.js',  // 忽略 Service Worker 文件
         '**/*.log'
       ]
-    }
+    },
+    cors: true
   }
 })

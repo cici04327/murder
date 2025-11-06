@@ -304,7 +304,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/store/user'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getUserInfo } from '@/api/user'
+import { getUserInfo, getUserPoints } from '@/api/user'
 import { getMyReservations } from '@/api/reservation'
 import { getMyCoupons } from '@/api/coupon'
 import { getFavoriteScripts } from '@/api/script'
@@ -456,15 +456,27 @@ const loadStats = async () => {
       stats.value.favoriteCount = favoriteRes.data.total || (favoriteRes.data.records || []).length
     }
     
-    // 加载优惠券数量
-    const couponRes = await getMyCoupons({ page: 1, pageSize: 1 })
+    // 加载优惠券数量（修复：后端total不准确，使用records.length）
+    const couponRes = await getMyCoupons({ status: 1, page: 1, pageSize: 1000 })
     if (couponRes.code === 1 || couponRes.code === 200) {
-      stats.value.couponCount = couponRes.data.total || 0
+      // 使用records.length获取实际优惠券数量
+      stats.value.couponCount = couponRes.data?.records?.length || 0
+      console.log('个人中心优惠券数量:', stats.value.couponCount)
     }
     
-    // 加载积分（从 userStore）
-    if (userStore.userInfo && userStore.userInfo.points !== undefined) {
-      stats.value.points = userStore.userInfo.points
+    // 加载积分（从API获取最新数据）
+    try {
+      const pointsRes = await getUserPoints()
+      if (pointsRes.code === 1 || pointsRes.code === 200) {
+        stats.value.points = pointsRes.data.currentPoints || 0
+        console.log('账户中心积分已更新:', stats.value.points)
+      }
+    } catch (error) {
+      console.error('加载积分失败:', error)
+      // 如果API调用失败，尝试从 userStore 获取
+      if (userStore.userInfo && userStore.userInfo.points !== undefined) {
+        stats.value.points = userStore.userInfo.points
+      }
     }
     
     // 计算成就进度

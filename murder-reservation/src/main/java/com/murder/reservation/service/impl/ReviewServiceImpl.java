@@ -36,7 +36,8 @@ public class ReviewServiceImpl implements ReviewService {
     @Autowired(required = false)
     private RestTemplate restTemplate;
     
-    private static final String USER_SERVICE_URL = "http://localhost:8082";
+    @Autowired(required = false)
+    private com.murder.common.feign.UserFeignClient userFeignClient;
 
     /**
      * 创建评价
@@ -44,58 +45,114 @@ public class ReviewServiceImpl implements ReviewService {
     @Override
     @Transactional
     public void create(ReviewDTO reviewDTO) {
+        // 1. 检查预约ID是否存在
+        if (reviewDTO.getReservationId() == null) {
+            throw new RuntimeException("预约ID不能为空");
+        }
+        
+        // 2. 检查该预约是否已经评价过
+        LambdaQueryWrapper<Review> checkWrapper = new LambdaQueryWrapper<>();
+        checkWrapper.eq(Review::getReservationId, reviewDTO.getReservationId());
+        Long existCount = reviewMapper.selectCount(checkWrapper);
+        if (existCount > 0) {
+            throw new RuntimeException("该订单已评价，不能重复评价");
+        }
+        
+        // 3. 获取当前用户ID
+        Long userId = BaseContext.getCurrentId();
+        if (userId == null) {
+            log.error("获取当前用户ID失败，BaseContext.getCurrentId() 返回 null");
+            throw new RuntimeException("请先登录");
+        }
+        
+        // 4. 构建评价对象
         Review review = new Review();
         BeanUtils.copyProperties(reviewDTO, review);
         
-        // 设置用户ID
-        Long userId = BaseContext.getCurrentId();
-        if (userId != null) {
-            review.setUserId(userId);
-        }
+        // 设置用户ID（必填）
+        review.setUserId(userId);
         
-        // 默认状态：待审核
-        review.setStatus(1);
+        // 默认状态：已通过（可以改为待审核：1）
+        review.setStatus(2); // 2-已通过，直接显示
         
-        // 设置奖励积分 - 发表评价获得50积分
+        // 4. 计算奖励积分
         int rewardPoints = 50; // 基础积分
+        
+        // 上传图片额外积分
         if (reviewDTO.getImages() != null && !reviewDTO.getImages().isEmpty()) {
-            rewardPoints += 10; // 上传图片额外积分
+            rewardPoints += 10;
         }
+        
+        // 内容详细额外积分（超过50字）
+        if (reviewDTO.getContent() != null && reviewDTO.getContent().length() > 50) {
+            rewardPoints += 10;
+        }
+        
+        // 三项都评分额外积分
+        if (reviewDTO.getStoreRating() != null && reviewDTO.getScriptRating() != null && reviewDTO.getServiceRating() != null) {
+            rewardPoints += 5;
+        }
+        
         review.setRewardPoints(rewardPoints);
         
+        // 5. 保存评价
         reviewMapper.insert(review);
+        log.info("用户{}创建评价成功: reviewId={}, reservationId={}", userId, review.getId(), reviewDTO.getReservationId());
         
-        // 发放积分到用户账户
+        // 6. 发放积分到用户账户
         if (userId != null) {
             try {
-                addPointsForReview(userId, rewardPoints);
+                addPointsForReview(userId, rewardPoints, review.getId());
                 log.info("用户{}发表评价，获得{}积分", userId, rewardPoints);
             } catch (Exception e) {
-                log.error("发放评价积分失败", e);
+                log.error("发放评价积分失败: userId={}, error={}", userId, e.getMessage(), e);
                 // 积分发放失败不影响评价创建
             }
         }
         
-        // TODO: 更新门店和剧本的平均评分
+        // 7. 更新门店和剧本的平均评分
+        try {
+            updateStoreAndScriptRating(reviewDTO.getStoreId(), reviewDTO.getScriptId());
+        } catch (Exception e) {
+            log.error("更新评分失败", e);
+        }
     }
     
     /**
      * 发放评价积分
      */
-    private void addPointsForReview(Long userId, Integer points) {
+    private void addPointsForReview(Long userId, Integer points, Long reviewId) {
         if (restTemplate == null) {
             log.warn("RestTemplate未配置，无法调用积分服务");
             return;
         }
         
         try {
-            String url = USER_SERVICE_URL + "/user/points/add?userId=" + userId 
-                    + "&points=" + points + "&reason=发表评价";
-            restTemplate.postForObject(url, null, String.class);
+            // 使用简单的文本描述
+            String description = "评价所得";
+            
+            if (userFeignClient != null) {
+                userFeignClient.addPoints(userId, points, description);
+                log.info("发放评价积分成功: userId={}, points={}, reviewId={}", userId, points, reviewId);
+            } else if (restTemplate != null) {
+                String url = "http://localhost:8082/user/points/add?userId=" + userId 
+                        + "&points=" + points + "&reason=" + description;
+                String result = restTemplate.postForObject(url, null, String.class);
+                log.info("发放评价积分成功: userId={}, points={}, reviewId={}, result={}", userId, points, reviewId, result);
+            }
         } catch (Exception e) {
-            log.error("调用积分服务失败", e);
-            throw e;
+            log.error("调用积分服务失败: userId={}, points={}, error={}", userId, points, e.getMessage(), e);
+            throw new RuntimeException("发放评价积分失败", e);
         }
+    }
+    
+    /**
+     * 更新门店和剧本的平均评分
+     */
+    private void updateStoreAndScriptRating(Long storeId, Long scriptId) {
+        // TODO: 调用门店服务和剧本服务更新平均评分
+        // 这里可以通过RestTemplate调用对应服务的接口
+        log.info("更新门店{}和剧本{}的平均评分", storeId, scriptId);
     }
 
     /**

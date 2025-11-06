@@ -149,7 +149,7 @@ public class CouponServiceImpl implements CouponService {
     }
 
     /**
-     * 用户领取优惠券
+     * 用户领取优惠券（支持免费领取和积分兑换）
      */
     @Override
     @Transactional
@@ -189,6 +189,29 @@ public class CouponServiceImpl implements CouponService {
             throw new CouponException("您已领取过该优惠券");
         }
         
+        // 如果需要积分兑换，扣除积分
+        if (coupon.getExchangePoints() != null && coupon.getExchangePoints() > 0) {
+            // 调用用户服务扣除积分
+            String userServiceUrl = "http://localhost:8082/user/points/deduct";
+            try {
+                org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
+                org.springframework.util.LinkedMultiValueMap<String, String> params = new org.springframework.util.LinkedMultiValueMap<>();
+                params.add("userId", userId.toString());
+                params.add("points", coupon.getExchangePoints().toString());
+                params.add("reason", "兑换优惠券：" + coupon.getName());
+                
+                org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+                org.springframework.http.HttpEntity<org.springframework.util.MultiValueMap<String, String>> requestEntity = 
+                    new org.springframework.http.HttpEntity<>(params, headers);
+                
+                restTemplate.postForEntity(userServiceUrl, requestEntity, String.class);
+                log.info("用户 {} 使用 {} 积分兑换优惠券 {}", userId, coupon.getExchangePoints(), couponId);
+            } catch (Exception e) {
+                log.error("扣除积分失败", e);
+                throw new CouponException("积分不足或兑换失败");
+            }
+        }
+        
         // 创建用户优惠券记录
         UserCoupon userCoupon = UserCoupon.builder()
                 .userId(userId)
@@ -221,6 +244,9 @@ public class CouponServiceImpl implements CouponService {
         wrapper.orderByDesc(UserCoupon::getReceiveTime);
         
         userCouponMapper.selectPage(pageInfo, wrapper);
+        
+        // 调试日志
+        log.info("分页查询结果 - 总记录数: {}, 当前页记录数: {}", pageInfo.getTotal(), pageInfo.getRecords().size());
         
         // 转换为VO
         List<UserCouponVO> voList = pageInfo.getRecords().stream()
@@ -436,6 +462,14 @@ public class CouponServiceImpl implements CouponService {
                 && (coupon.getValidStartTime() == null || now.isAfter(coupon.getValidStartTime()))
                 && (coupon.getValidEndTime() == null || now.isBefore(coupon.getValidEndTime()));
         vo.setCanReceive(canReceive);
+        
+        // 确保exchangePoints字段被设置（如果为null设为0）
+        if (vo.getExchangePoints() == null) {
+            vo.setExchangePoints(0);
+        }
+        
+        log.debug("转换优惠券VO - ID: {}, Name: {}, ExchangePoints: {}, RemainCount: {}, CanReceive: {}", 
+                  coupon.getId(), coupon.getName(), vo.getExchangePoints(), coupon.getRemainCount(), canReceive);
         
         return vo;
     }

@@ -34,7 +34,8 @@ public class ScriptFavoriteServiceImpl implements ScriptFavoriteService {
     @Autowired(required = false)
     private RestTemplate restTemplate;
     
-    private static final String USER_SERVICE_URL = "http://localhost:8082";
+    @Autowired(required = false)
+    private com.murder.common.feign.UserFeignClient userFeignClient;
     
     /**
      * 收藏剧本
@@ -69,8 +70,11 @@ public class ScriptFavoriteServiceImpl implements ScriptFavoriteService {
         // 每收藏5个剧本奖励20积分
         if (favoriteCount % 5 == 0) {
             try {
-                if (restTemplate != null) {
-                    String url = USER_SERVICE_URL + "/user/points/reward-favorite?userId=" + userId;
+                if (userFeignClient != null) {
+                    userFeignClient.addPoints(userId, 20, "收藏剧本达到" + favoriteCount + "个");
+                    log.info("用户{}收藏剧本达到{}个，获得20积分奖励", userId, favoriteCount);
+                } else if (restTemplate != null) {
+                    String url = "http://localhost:8082/user/points/reward-favorite?userId=" + userId;
                     restTemplate.postForObject(url, null, String.class);
                     log.info("用户{}收藏剧本达到{}个，获得20积分奖励", userId, favoriteCount);
                 }

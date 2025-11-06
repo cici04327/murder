@@ -1,0 +1,47 @@
+# ============================================
+# Nacos 配置中心 - 公共配置
+# Data ID: common-config.yml
+# Group: DEFAULT_GROUP
+# ============================================
+
+# MyBatis-Plus 公共配置
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      id-type: auto
+      logic-delete-field: isDeleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+    banner: false
+
+# JWT 公共配置
+murder:
+  jwt:
+    user-secret-key: murder-user-secret-key-2024-secure-key-for-jwt
+    user-ttl: 7200000
+    user-token-name: token
+    admin-secret-key: murder-admin-secret-key-2024-secure-key-for-jwt
+    admin-ttl: 7200000
+    admin-token-name: admin-token
+
+# Knife4j 公共配置
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
+
+# 日志配置
+logging:
+  pattern:
+    console: '%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{50} - %msg%n'
+
+# Spring 公共配置
+spring:
+  main:
+    allow-bean-definition-overriding: true
+  sql:
+    init:
+      mode: never

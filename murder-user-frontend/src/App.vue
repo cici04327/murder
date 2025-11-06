@@ -71,19 +71,19 @@ onMounted(() => {
   min-height: 100vh;
   position: relative;
   
-  /* 渐变背景 - 神秘的深色调 */
+  /* 剧本杀主题 - 神秘深色背景 */
   background: linear-gradient(135deg, 
-    #667eea 0%, 
-    #764ba2 25%, 
-    #f093fb 50%, 
-    #4facfe 75%, 
-    #00f2fe 100%
+    #0f0c29 0%,      /* 深邃的夜空蓝 */
+    #302b63 25%,     /* 神秘紫 */
+    #24243e 50%,     /* 暗夜蓝 */
+    #1a1a2e 75%,     /* 深邃黑 */
+    #16213e 100%     /* 午夜蓝 */
   );
   background-size: 400% 400%;
-  animation: gradientShift 15s ease infinite;
+  animation: gradientShift 20s ease infinite;
 }
 
-/* 添加纹理层 */
+/* 添加神秘光晕层 - 剧本杀风格 */
 #app::before {
   content: '';
   position: fixed;
@@ -92,14 +92,15 @@ onMounted(() => {
   width: 100%;
   height: 100%;
   background-image: 
-    radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.1) 0%, transparent 50%),
-    radial-gradient(circle at 80% 80%, rgba(252, 163, 17, 0.08) 0%, transparent 50%),
-    radial-gradient(circle at 40% 20%, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
+    radial-gradient(circle at 15% 30%, rgba(139, 0, 0, 0.15) 0%, transparent 40%),      /* 暗红血色 */
+    radial-gradient(circle at 85% 70%, rgba(75, 0, 130, 0.12) 0%, transparent 40%),     /* 深紫神秘 */
+    radial-gradient(circle at 50% 50%, rgba(184, 134, 11, 0.08) 0%, transparent 60%),   /* 暗金古老 */
+    radial-gradient(circle at 30% 80%, rgba(25, 25, 112, 0.1) 0%, transparent 50%);     /* 午夜蓝 */
   pointer-events: none;
   z-index: 0;
 }
 
-/* 添加网格纹理 */
+/* 添加暗纹网格 - 神秘质感 */
 #app::after {
   content: '';
   position: fixed;
@@ -108,11 +109,12 @@ onMounted(() => {
   width: 100%;
   height: 100%;
   background-image: 
-    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-  background-size: 50px 50px;
+    linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+  background-size: 60px 60px;
   pointer-events: none;
   z-index: 0;
+  opacity: 0.5;
 }
 
 body {

@@ -72,6 +72,11 @@ public class Coupon implements Serializable {
     private String description;
     
     /**
+     * 兑换所需积分（0表示免费领取）
+     */
+    private Integer exchangePoints;
+    
+    /**
      * 状态：1上架，0下架
      */
     private Integer status;

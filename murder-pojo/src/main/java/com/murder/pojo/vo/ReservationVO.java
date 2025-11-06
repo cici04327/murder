@@ -103,6 +103,23 @@ public class ReservationVO implements Serializable {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime payTime;
     
+    @Schema(description = "退款原因")
+    private String refundReason;
+    
+    @Schema(description = "退款申请时间")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime refundApplyTime;
+    
+    @Schema(description = "退款处理时间")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime refundProcessTime;
+    
+    @Schema(description = "退款状态：0无退款，1退款中，2退款成功，3退款失败")
+    private Integer refundStatus;
+    
+    @Schema(description = "管理员备注")
+    private String adminRemark;
+    
     @Schema(description = "创建时间")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createTime;
@@ -110,5 +127,8 @@ public class ReservationVO implements Serializable {
     @Schema(description = "更新时间")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updateTime;
+    
+    @Schema(description = "是否已评价：0未评价，1已评价")
+    private Integer hasReviewed;
 }
 

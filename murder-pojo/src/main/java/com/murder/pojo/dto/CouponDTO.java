@@ -43,6 +43,9 @@ public class CouponDTO implements Serializable {
     @Schema(description = "描述")
     private String description;
     
+    @Schema(description = "兑换所需积分（0表示免费领取）")
+    private Integer exchangePoints;
+    
     @Schema(description = "状态：1上架，0下架")
     private Integer status;
 }

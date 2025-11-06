@@ -63,4 +63,9 @@ public interface UserPointsService {
      * 每完成一次预约奖励100积分
      */
     void rewardForReservation(Long userId, Long reservationId);
+    
+    /**
+     * 退款时扣除预约奖励的积分
+     */
+    void deductForRefund(Long userId, Long reservationId);
 }

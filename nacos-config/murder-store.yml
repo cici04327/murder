@@ -1,0 +1,23 @@
+# ============================================
+# Nacos 配置中心 - 门店服务专属配置
+# Data ID: murder-store.yml
+# Group: DEFAULT_GROUP
+# ============================================
+
+server:
+  port: 8083
+
+spring:
+  redis:
+    database: 1  # 门店服务使用 Redis DB1
+  cloud:
+    nacos:
+      discovery:
+        metadata:
+          version: 1.0.0
+          service-type: store
+
+# 日志配置
+logging:
+  level:
+    com.murder.store: debug

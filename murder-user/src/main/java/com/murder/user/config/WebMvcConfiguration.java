@@ -29,6 +29,10 @@ public class WebMvcConfiguration implements WebMvcConfigurer {
                 .excludePathPatterns("/user/admin/login")       // 排除管理员登录接口
                 .excludePathPatterns("/notification/send")      // 排除通知发送接口（供内部服务调用）
                 .excludePathPatterns("/notification/send-all")  // 排除全员通知接口
+                .excludePathPatterns("/user/points/add")        // 排除积分增加接口（供内部服务调用）
+                .excludePathPatterns("/user/points/deduct")     // 排除积分扣除接口（供内部服务调用）
+                .excludePathPatterns("/user/points/reward/**")  // 排除积分奖励接口（供内部服务调用）
+                .excludePathPatterns("/user/points/deduct/**")  // 排除积分扣除接口（供内部服务调用）
                 .excludePathPatterns("/article/**")             // 排除文章接口（公开访问）
                 .excludePathPatterns("/doc.html")
                 .excludePathPatterns("/webjars/**")

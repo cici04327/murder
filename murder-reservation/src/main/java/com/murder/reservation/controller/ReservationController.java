@@ -43,10 +43,12 @@ public class ReservationController {
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer pageSize,
             @RequestParam(required = false) Long userId,
-            @RequestParam(required = false) Integer status) {
-        log.info("分页查询预约列表: page={}, pageSize={}, userId={}, status={}", 
-                page, pageSize, userId, status);
-        PageResult<com.murder.pojo.vo.ReservationVO> pageResult = reservationService.pageQueryWithDetails(page, pageSize, userId, status);
+            @RequestParam(required = false) Integer status,
+            @RequestParam(required = false) Integer refundStatus,
+            @RequestParam(required = false) Boolean hasRefund) {
+        log.info("分页查询预约列表: page={}, pageSize={}, userId={}, status={}, refundStatus={}, hasRefund={}", 
+                page, pageSize, userId, status, refundStatus, hasRefund);
+        PageResult<com.murder.pojo.vo.ReservationVO> pageResult = reservationService.pageQueryWithDetails(page, pageSize, userId, status, refundStatus, hasRefund);
         return Result.success(pageResult);
     }
 

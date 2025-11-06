@@ -37,13 +37,17 @@ request.interceptors.response.use(
     if (res.code === 1 || res.code === 200) {
       return res
     } else {
-      ElMessage.error(res.msg || res.message || '请求失败')
-      return Promise.reject(new Error(res.msg || res.message || '请求失败'))
+      const errorMsg = res.msg || res.message || '请求失败'
+      ElMessage.error(errorMsg)
+      return Promise.reject(new Error(errorMsg))
     }
   },
   error => {
-    console.error('响应错误:', error)
-    
+    // 统一记录更详细的错误信息
+    const method = error.config?.method?.toUpperCase?.() || 'GET'
+    const url = error.config?.url || ''
+    console.error(`响应错误: ${method} ${url}`, error)
+
     // 静默处理的错误（不显示错误消息）
     const silentErrors = [
       '/script/review/page',        // 评价列表可能为空
@@ -51,7 +55,6 @@ request.interceptors.response.use(
       '/article/comments'            // 评论列表可能为空
     ]
     
-    const url = error.config?.url || ''
     const isSilent = silentErrors.some(path => url.includes(path))
     
     if (error.response) {
@@ -82,16 +85,40 @@ request.interceptors.response.use(
           break
         default:
           if (!isSilent) {
-            ElMessage.error(data.msg || data.message || '请求失败')
+            const errorMsg = (data && (data.msg || data.message)) || '请求失败'
+            ElMessage.error(errorMsg)
           }
       }
     } else if (error.message.includes('timeout')) {
       if (!isSilent) {
         ElMessage.error('请求超时，请检查网络')
       }
-    } else if (error.message.includes('Network Error')) {
+    } else if (error.code === 'ERR_NETWORK' || error.code === 'ERR_CONNECTION_REFUSED' || error.message.includes('Network Error')) {
+      // 对 GET 请求做有限重试，缓解偶发现象（例如代理握手失败、服务暂时不可用）
+      const config = error.config || {}
+      config.__retryCount = config.__retryCount || 0
+      const maxRetries = 3  // 增加重试次数
+      if ((config.method || 'get').toLowerCase() === 'get' && config.__retryCount < maxRetries) {
+        config.__retryCount += 1
+        const delay = 500 * config.__retryCount  // 增加重试延迟
+        console.warn(`网络错误，${delay}ms 后重试(${config.__retryCount}/${maxRetries}):`, config.url)
+        return new Promise(resolve => setTimeout(resolve, delay)).then(() => request(config))
+      }
+      
+      // 重试失败后的友好提示
       if (!isSilent) {
-        ElMessage.error('网络错误，请检查网络连接')
+        if (error.code === 'ERR_CONNECTION_REFUSED') {
+          ElMessage.error({
+            message: '无法连接到服务器，请确认后端服务已启动',
+            duration: 5000
+          })
+          console.error('后端服务连接失败，请检查：')
+          console.error('1. 网关服务是否运行 (端口 8080)')
+          console.error('2. 相关微服务是否启动 (端口 8082-8085)')
+          console.error('3. 可以运行 "node check-services.js" 检查服务状态')
+        } else {
+          ElMessage.error('网络连接异常，请检查网络或稍后重试')
+        }
       }
     } else {
       if (!isSilent) {

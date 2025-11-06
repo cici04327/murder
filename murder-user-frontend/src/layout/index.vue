@@ -46,6 +46,10 @@
                     <el-icon><User /></el-icon>
                     个人中心
                   </el-dropdown-item>
+                  <el-dropdown-item command="vip">
+                    <el-icon><Medal /></el-icon>
+                    VIP会员
+                  </el-dropdown-item>
                   <el-dropdown-item command="reservations">
                     <el-icon><Calendar /></el-icon>
                     我的预约
@@ -116,7 +120,7 @@ import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/store/user'
 import { ElMessageBox } from 'element-plus'
-import { Location, Bell, User, Calendar, Ticket, Star, SwitchButton } from '@element-plus/icons-vue'
+import { Location, Bell, User, Calendar, Ticket, Star, SwitchButton, Medal } from '@element-plus/icons-vue'
 import GlobalSearch from '@/components/GlobalSearch.vue'
 import AICustomerService from '@/components/AICustomerService.vue'
 import ThemeSwitcher from '@/components/ThemeSwitcher.vue'
@@ -139,6 +143,9 @@ const handleUserCommand = (command) => {
   switch (command) {
     case 'profile':
       router.push('/user/profile')
+      break
+    case 'vip':
+      router.push('/vip')
       break
     case 'reservations':
       router.push('/user/reservations')

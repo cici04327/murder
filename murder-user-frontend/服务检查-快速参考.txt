@@ -1,0 +1,106 @@
+╔═══════════════════════════════════════════════════════════════╗
+║          ERR_CONNECTION_REFUSED 错误 - 快速解决指南            ║
+╚═══════════════════════════════════════════════════════════════╝
+
+【问题现象】
+浏览器控制台显示：
+  ✗ 响应错误: GET /store/list/hot AxiosError
+  ✗ Failed to load resource: net::ERR_CONNECTION_REFUSED
+  ✗ 响应错误: GET /article/recommended AxiosError
+
+【快速诊断】3 个命令搞定
+
+  1️⃣  一键检查所有服务
+      cd murder-user-frontend
+      npm run check-services
+      
+  2️⃣  手动检查端口（Windows）
+      netstat -ano | findstr "8080 8082 8083 8084 8085"
+      
+  3️⃣  使用启动脚本（自动检查+启动）
+      双击: murder-user-frontend\启动检查.bat
+
+【服务端口对照表】
+
+  端口    服务              URL路径              说明
+  ────────────────────────────────────────────────────────
+  8080    网关 Gateway      /api/**             ⭐ 必须启动
+  8082    用户服务 User     /api/article/**     文章接口
+  8083    门店服务 Store    /api/store/**       门店接口
+  8084    剧本服务 Script   /api/script/**      剧本接口
+  8085    预约服务 Reserve  /api/reservation/** 预约接口
+
+【快速修复步骤】
+
+  步骤 1: 检查哪些服务未启动
+  ────────────────────────────────────
+  cd murder-user-frontend
+  npm run check-services
+  
+  步骤 2: 启动缺失的服务
+  ────────────────────────────────────
+  # 网关（最重要！）
+  cd murder-gateway
+  mvn spring-boot:run
+  
+  # 用户服务（处理文章接口）
+  cd murder-user
+  mvn spring-boot:run
+  
+  # 门店服务（处理门店接口）
+  cd murder-store
+  mvn spring-boot:run
+  
+  步骤 3: 等待 30-60 秒让服务启动完成
+  ────────────────────────────────────
+  耐心等待，观察控制台日志
+  
+  步骤 4: 刷新浏览器
+  ────────────────────────────────────
+  按 Ctrl+Shift+R 硬刷新
+
+【前端已自动优化】
+
+  ✅ 自动重试 3 次（每次延迟 500ms、1000ms、1500ms）
+  ✅ 友好的错误提示
+  ✅ 控制台显示诊断建议
+  ✅ 非关键接口静默处理
+
+【测试连接】
+
+  # 方法 1: 使用 curl
+  curl http://localhost:8080/api/user/info
+  
+  # 方法 2: 浏览器访问
+  http://localhost:8080/api/user/info
+  
+  # 应该返回 JSON 数据，不是 "连接被拒绝"
+
+【常见问题】
+
+  Q: 服务启动了还是报错？
+  A: 等待 30-60 秒，服务需要时间启动
+  
+  Q: 只有部分接口报错？
+  A: 根据错误 URL 判断缺少哪个服务
+     /store/**     → 启动 murder-store (8083)
+     /article/**   → 启动 murder-user (8082)
+     /script/**    → 启动 murder-script (8084)
+  
+  Q: 检查显示端口被占用但服务不响应？
+  A: 可能是僵尸进程，重启服务
+     Windows: taskkill /F /IM java.exe
+     然后重新启动服务
+
+【更多帮助】
+
+  📖 详细指南: SERVICE_CHECK_GUIDE.md
+  🔧 故障排查: TROUBLESHOOTING.md
+  📋 修复说明: CONNECTION_REFUSED_FIX.md
+  📚 项目文档: README.md
+
+╔═══════════════════════════════════════════════════════════════╗
+║  提示: 建议每次开发前运行 "npm run check-services" 检查服务    ║
+╚═══════════════════════════════════════════════════════════════╝
+
+

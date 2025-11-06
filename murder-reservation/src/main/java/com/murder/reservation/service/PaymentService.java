@@ -26,5 +26,20 @@ public interface PaymentService {
      * @return 支付状态
      */
     Integer queryPaymentStatus(Long reservationId);
+    
+    /**
+     * 申请退款（用户端）
+     * @param reservationId 预约ID
+     * @param reason 退款原因
+     */
+    void applyRefund(Long reservationId, String reason);
+    
+    /**
+     * 处理退款（管理端）
+     * @param reservationId 预约ID
+     * @param approved 是否同意退款：1同意，0拒绝
+     * @param adminRemark 管理员备注
+     */
+    void processRefund(Long reservationId, Integer approved, String adminRemark);
 }
 

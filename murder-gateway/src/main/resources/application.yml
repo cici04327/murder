@@ -4,43 +4,58 @@ server:
 spring:
   application:
     name: murder-gateway
-  redis:
-    host: localhost
-    port: 6379
-    database: 2
-    timeout: 3000ms
-    lettuce:
-      pool:
-        max-active: 8
-        max-idle: 8
-        min-idle: 0
-        max-wait: -1ms
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      database: 2
+      connect-timeout: 3000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: -1ms
   cloud:
     compatibility-verifier:
       enabled: false
     nacos:
       discovery:
-        enabled: false  # 禁用服务发现，使用直连模式
+        enabled: true  # ✅ 启用服务发现（毕设必备）
         server-addr: localhost:8848
+        namespace: public
+        group: DEFAULT_GROUP
       config:
-        enabled: false
+        enabled: false  # 暂不启用配置中心
         server-addr: localhost:8848
         file-extension: yml
         import-check:
           enabled: false
     gateway:
+      discovery:
+        locator:
+          enabled: true  # ✅ 启用服务发现路由
+          lower-case-service-id: true
       routes:
-        # 用户服务路由
+        # 用户服务路由（服务发现模式）
         - id: murder-user
-          uri: http://localhost:8082  # 直连模式
+          uri: lb://murder-user  # ✅ 改用服务名（负载均衡）
           predicates:
             - Path=/api/user/**
           filters:
             - StripPrefix=1
             
-        # WebSocket 路由（用户服务）
+        # VIP服务路由（属于用户服务）
+        - id: murder-vip
+          uri: lb://murder-user  # ✅ 改用服务名
+          predicates:
+            - Path=/api/vip/**
+          filters:
+            - StripPrefix=1
+            
+        # WebSocket 路由（用户服务）⚠️ 暂时保持直连
         - id: murder-user-websocket
-          uri: ws://localhost:8082  # WebSocket 协议
+          uri: ws://localhost:8082  # WebSocket暂时用直连
           predicates:
             - Path=/api/ws/**
           filters:
@@ -48,7 +63,7 @@ spring:
             
         # 优惠券服务路由（属于用户服务）
         - id: murder-coupon
-          uri: http://localhost:8082  # 直连模式
+          uri: lb://murder-user  # ✅ 服务发现
           predicates:
             - Path=/api/coupon/**
           filters:
@@ -56,15 +71,15 @@ spring:
             
         # 用户服务路由（管理端使用user-api前缀）
         - id: murder-user-admin
-          uri: http://localhost:8082  # 直连模式
+          uri: lb://murder-user  # ✅ 服务发现
           predicates:
-            - Path=/user-api/user/**
+            - Path=/user-api/**
           filters:
             - StripPrefix=1
             
         # 通知服务路由（属于用户服务，使用user-api前缀，管理端）
         - id: murder-notification-admin
-          uri: http://localhost:8082  # 直连模式
+          uri: lb://murder-user  # ✅ 服务发现
           predicates:
             - Path=/user-api/notification/**
           filters:
@@ -72,7 +87,7 @@ spring:
             
         # 通知服务路由（属于用户服务，用户端）
         - id: murder-notification
-          uri: http://localhost:8082  # 直连模式
+          uri: lb://murder-user  # ✅ 服务发现
           predicates:
             - Path=/api/notification/**
           filters:
@@ -80,7 +95,7 @@ spring:
             
         # 文章服务路由（属于用户服务）
         - id: murder-article
-          uri: http://localhost:8082  # 直连模式
+          uri: lb://murder-user  # ✅ 服务发现
           predicates:
             - Path=/api/article/**
           filters:
@@ -88,7 +103,7 @@ spring:
             
         # 统计服务路由（属于门店服务）
         - id: murder-statistics
-          uri: http://localhost:8083  # 直连模式
+          uri: lb://murder-store  # ✅ 服务发现
           predicates:
             - Path=/api/statistics/**
           filters:
@@ -96,7 +111,7 @@ spring:
             
         # 门店服务路由
         - id: murder-store
-          uri: http://localhost:8083  # 直连模式
+          uri: lb://murder-store  # ✅ 服务发现
           predicates:
             - Path=/api/store/**
           filters:
@@ -104,7 +119,7 @@ spring:
             
         # 剧本服务路由
         - id: murder-script
-          uri: http://localhost:8084  # 直连模式
+          uri: lb://murder-script  # ✅ 服务发现
           predicates:
             - Path=/api/script/**
           filters:
@@ -112,7 +127,7 @@ spring:
             
         # 预约服务路由
         - id: murder-reservation
-          uri: http://localhost:8085  # 直连模式
+          uri: lb://murder-reservation  # ✅ 服务发现
           predicates:
             - Path=/api/reservation/**
           filters:

@@ -58,7 +58,16 @@
             placeholder="邀请码（选填，填写可获得积分）"
             size="large"
             prefix-icon="Ticket"
-            @keyup.enter="handleRegister"
+          />
+        </el-form-item>
+        
+        <!-- 滑块验证码 -->
+        <el-form-item>
+          <SliderCaptcha 
+            ref="captchaRef"
+            @success="handleCaptchaSuccess"
+            @fail="handleCaptchaFail"
+            @refresh="handleCaptchaRefresh"
           />
         </el-form-item>
         
@@ -67,6 +76,7 @@
             type="primary"
             size="large"
             :loading="loading"
+            :disabled="!captchaVerified"
             @click="handleRegister"
             style="width: 100%"
           >
@@ -88,13 +98,16 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/store/user'
 import { ElMessage } from 'element-plus'
+import SliderCaptcha from '@/components/SliderCaptcha.vue'
 
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
 
 const registerFormRef = ref(null)
+const captchaRef = ref(null)
 const loading = ref(false)
+const captchaVerified = ref(false)
 
 const registerForm = reactive({
   username: '',
@@ -149,8 +162,31 @@ const registerRules = {
   ]
 }
 
+// 验证码成功回调
+const handleCaptchaSuccess = () => {
+  captchaVerified.value = true
+  ElMessage.success('验证成功')
+}
+
+// 验证码失败回调
+const handleCaptchaFail = () => {
+  captchaVerified.value = false
+  ElMessage.error('验证失败，请重试')
+}
+
+// 验证码刷新回调
+const handleCaptchaRefresh = () => {
+  captchaVerified.value = false
+}
+
 const handleRegister = async () => {
   if (!registerFormRef.value) return
+  
+  // 检查验证码
+  if (!captchaVerified.value) {
+    ElMessage.warning('请先完成安全验证')
+    return
+  }
   
   await registerFormRef.value.validate(async (valid) => {
     if (valid) {
@@ -172,6 +208,18 @@ const handleRegister = async () => {
           setTimeout(() => {
             router.push('/login')
           }, 1000)
+        } else {
+          // 注册失败，重置验证码
+          captchaVerified.value = false
+          if (captchaRef.value) {
+            captchaRef.value.reset()
+          }
+        }
+      } catch (error) {
+        // 注册失败，重置验证码
+        captchaVerified.value = false
+        if (captchaRef.value) {
+          captchaRef.value.reset()
         }
       } finally {
         loading.value = false

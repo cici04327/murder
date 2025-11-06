@@ -78,6 +78,18 @@ const routes = [
         meta: { title: '预约详情', requireAuth: true }
       },
       {
+        path: 'reservation/refund',
+        name: 'ReservationRefund',
+        component: () => import('@/views/reservation/refund.vue'),
+        meta: { title: '申请退款', requireAuth: true }
+      },
+      {
+        path: 'reservation/review/:id',
+        name: 'ReservationReview',
+        component: () => import('@/views/reservation/review.vue'),
+        meta: { title: '评价订单', requireAuth: true }
+      },
+      {
         path: 'payment/:id',
         name: 'Payment',
         component: () => import('@/views/payment/index.vue'),
@@ -90,66 +102,70 @@ const routes = [
         meta: { title: '支付结果', requireAuth: true }
       },
       {
-        path: 'user',
-        name: 'UserCenter',
-        redirect: '/user/profile',
-        meta: { requireAuth: true },
-        children: [
-          {
-            path: 'profile',
-            name: 'UserProfile',
-            component: () => import('@/views/user/profile-enhanced.vue'),
-            meta: { title: '个人中心', requireAuth: true }
-          },
-          {
-            path: 'reservations',
-            name: 'UserReservations',
-            component: () => import('@/views/user/reservations.vue'),
-            meta: { title: '我的预约', requireAuth: true }
-          },
-          {
-            path: 'coupons',
-            name: 'UserCoupons',
-            component: () => import('@/views/user/coupons.vue'),
-            meta: { title: '我的优惠券', requireAuth: true }
-          },
-          {
-            path: 'addresses',
-            name: 'UserAddresses',
-            component: () => import('@/views/user/addresses.vue'),
-            meta: { title: '我的地址', requireAuth: true }
-          },
-          {
-            path: 'points',
-            name: 'UserPoints',
-            component: () => import('@/views/user/points.vue'),
-            meta: { title: '我的积分', requireAuth: true }
-          },
-          {
-            path: 'notifications',
-            name: 'UserNotifications',
-            component: () => import('@/views/user/notifications.vue'),
-            meta: { title: '消息通知', requireAuth: true }
-          },
-          {
-            path: 'favorites',
-            name: 'UserFavorites',
-            component: () => import('@/views/user/favorites-enhanced.vue'),
-            meta: { title: '我的收藏', requireAuth: true }
-          },
-          {
-            path: 'favorites-enhanced',
-            name: 'UserFavoritesEnhanced',
-            component: () => import('@/views/user/favorites-enhanced.vue'),
-            meta: { title: '我的收藏（增强版）', requireAuth: true }
-          },
-          {
-            path: 'settings',
-            name: 'UserSettings',
-            component: () => import('@/views/user/settings.vue'),
-            meta: { title: '账号设置', requireAuth: true }
-          }
-        ]
+        path: 'user/profile',
+        name: 'UserProfile',
+        component: () => import('@/views/user/profile-enhanced.vue'),
+        meta: { title: '个人中心', requireAuth: true }
+      },
+      {
+        path: 'user/reservations',
+        name: 'UserReservations',
+        component: () => import('@/views/user/reservations.vue'),
+        meta: { title: '我的预约', requireAuth: true }
+      },
+      {
+        path: 'user/coupons',
+        name: 'UserCoupons',
+        component: () => import('@/views/user/coupons.vue'),
+        meta: { title: '我的优惠券', requireAuth: true }
+      },
+      {
+        path: 'user/addresses',
+        name: 'UserAddresses',
+        component: () => import('@/views/user/addresses.vue'),
+        meta: { title: '我的地址', requireAuth: true }
+      },
+      {
+        path: 'user/points',
+        name: 'UserPoints',
+        component: () => import('@/views/user/points.vue'),
+        meta: { title: '我的积分', requireAuth: true }
+      },
+      {
+        path: 'user/notifications',
+        name: 'UserNotifications',
+        component: () => import('@/views/user/notifications.vue'),
+        meta: { title: '消息通知', requireAuth: true }
+      },
+      {
+        path: 'user/favorites',
+        name: 'UserFavorites',
+        component: () => import('@/views/user/favorites-enhanced.vue'),
+        meta: { title: '我的收藏', requireAuth: true }
+      },
+      {
+        path: 'user/favorites-enhanced',
+        name: 'UserFavoritesEnhanced',
+        component: () => import('@/views/user/favorites-enhanced.vue'),
+        meta: { title: '我的收藏（增强版）', requireAuth: true }
+      },
+      {
+        path: 'user/settings',
+        name: 'UserSettings',
+        component: () => import('@/views/user/settings.vue'),
+        meta: { title: '账号设置', requireAuth: true }
+      },
+      {
+        path: 'user/statistics',
+        name: 'UserStatistics',
+        component: () => import('@/views/user/statistics.vue'),
+        meta: { title: '数据统计', requireAuth: true }
+      },
+      {
+        path: 'vip',
+        name: 'VipCenter',
+        component: () => import('@/views/vip/index.vue'),
+        meta: { title: 'VIP会员中心', requireAuth: true }
       },
       {
         path: 'about',

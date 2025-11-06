@@ -1,7 +1,19 @@
 <template>
-  <div class="info-page">
+  <div class="info-page contact-page">
     <!-- 面包屑导航 -->
     <InfoPageBreadcrumb />
+    
+    <!-- 头部横幅 -->
+    <div class="hero-banner">
+      <div class="hero-content">
+        <h1 class="hero-title animate-fade-in-up">
+          <span class="gradient-text">随时为您服务</span>
+        </h1>
+        <p class="hero-subtitle animate-fade-in-up delay-1">
+          24小时在线客服，快速响应您的每一个需求
+        </p>
+      </div>
+    </div>
     
     <el-card class="info-card animate-fade-in">
       <template #header>
@@ -200,8 +212,8 @@ import { useTheme } from '@/composables/useTheme'
 
 // 初始化
 useScrollReveal()
-const { initTheme } = useTheme()
-initTheme()
+const { loadTheme } = useTheme()
+loadTheme()
 
 // 反馈表单
 const feedbackFormRef = ref(null)
@@ -260,7 +272,78 @@ const resetForm = () => {
 </script>
 
 <style scoped>
+@import '@/styles/info-enhanced.css';
 @import '@/styles/info-theme.css';
+
+/* 联系方式卡片特殊样式 */
+.contact-methods-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 25px;
+  margin: 30px 0;
+}
+
+.contact-method-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 35px;
+  border-radius: 16px;
+  text-align: center;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.contact-method-card::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.contact-method-card:hover::before {
+  opacity: 1;
+}
+
+.contact-method-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 15px 35px rgba(102, 126, 234, 0.4);
+}
+
+.contact-icon-large {
+  font-size: 60px;
+  margin-bottom: 15px;
+}
+
+.contact-title {
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.contact-detail {
+  font-size: 16px;
+  opacity: 0.9;
+}
+
+/* 地图容器 */
+.map-container {
+  margin-top: 30px;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  height: 400px;
+  background: #f5f5f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 
 .info-page {
   padding: 20px;

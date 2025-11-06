@@ -1,0 +1,38 @@
+# ============================================
+# Nacos 配置中心 - 剧本服务专属配置
+# Data ID: murder-script.yml
+# Group: DEFAULT_GROUP
+# ============================================
+
+server:
+  port: 8084
+
+spring:
+  redis:
+    database: 3  # 剧本服务使用 Redis DB3
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 5MB
+      max-request-size: 50MB
+  cloud:
+    nacos:
+      discovery:
+        metadata:
+          version: 1.0.0
+          service-type: script
+
+# 文件上传配置
+file:
+  upload:
+    path: ./upload
+    base-url: http://localhost:8081
+
+# MyBatis-Plus 分页配置
+mybatis-plus:
+  interceptor:
+    pagination:
+      enabled: true
+      db-type: mysql
+      overflow: false
+      max-limit: 1000
